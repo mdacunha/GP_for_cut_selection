@@ -57,7 +57,7 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
     toolbox.register("compile", gp.compile, pset=pset)
 
     def evaluate(scoring_function):
-        print(str(scoring_function))
+        print(str(scoring_function), flush=True)
 
         python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
         result = subprocess.run(
@@ -66,7 +66,7 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             capture_output=True, text=True)
         mean_solving_time_or_gap = result.stdout
 
-        print("mean solving time or gap: ", mean_solving_time_or_gap)
+        print("mean solving time or gap: ", mean_solving_time_or_gap, flush=True)
         if mean_solving_time_or_gap == "" or mean_solving_time_or_gap == "nan":
             print("error: ", result.stderr)
             return 10e20,
