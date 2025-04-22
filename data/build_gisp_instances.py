@@ -98,22 +98,22 @@ def generate_instances(nb_of_instances, whichSet, setParam, alphaE2, min_n, max_
             # Create IP, write it to file, and solve it with CPLEX
             #print(lpname)
             # ip = createIP(g, E2, lp_dir + "/" + lpname)
-            createIP(g, E2, lp_dir + "\\" + lpname + ".lp")
+            createIP(g, E2, lp_dir + "/" + lpname + ".lp")
             if solve:
                 model = sp.Model()
                 model.hideOutput()
-                model.readProblem(lp_dir +"\\" + lpname + ".lp")
+                model.readProblem(lp_dir +"/" + lpname + ".lp")
                 model.optimize()
-                model.writeBestSol(lp_dir +"\\" + lpname + ".sol")
+                model.writeBestSol(lp_dir +"/" + lpname + ".sol")
 
                 if model.getNNodes() <= 1:
-                    os.remove(lp_dir +"\\" + lpname + ".lp")
-                    os.remove(lp_dir +"\\" + lpname  + ".sol")
+                    os.remove(lp_dir +"/" + lpname + ".lp")
+                    os.remove(lp_dir +"/" + lpname  + ".sol")
                     solved = False
 
 
 if __name__ == "__main__":
-    exp_dir = f"..\\data\\gisp\\"
+    exp_dir = f"../data/gisp/"
 
     whichSet = 'SET2'
     setparam = 100.0
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     data_partition = "train"
     min_n = 200
     max_n = 250
-    lp_dir = os.path.join(os.path.dirname(__file__), exp_dir + data_partition + '\\')
+    lp_dir = os.path.join(os.path.dirname(__file__), exp_dir + data_partition + '/')
     generate_instances(n, whichSet, setparam, alphaE2, min_n, max_n, er_prob, None, lp_dir, False)
 
 
