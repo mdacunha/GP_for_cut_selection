@@ -36,7 +36,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
     for instance in instances:
         if instance[len(instance) - 3:] == ".lp":
             path = os.path.join(conf.ROOT_DIR, performance_folder)
-            instance_path = path +'\\'+ str(instance)
+            instance_path = path +'/'+ str(instance)
             nb_nodes,time = perform_SCIP_instance(instance_path, cut_comp=comp_policy, node_select=sel_policy,
                                                    parameter_settings=parameter_settings)
 
@@ -44,11 +44,11 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
 
     if func_name is None:
         new_json_dir = os.path.join(os.path.abspath('')[:len(os.path.abspath(''))],  # - 25
-                                    f'{saving_folder}\\{problem}\\{partition}_{function}.json')
+                                    f'{saving_folder}/{problem}/{partition}_{function}.json')
         print("perfs are done for the function ", function)
     else:
         new_json_dir = os.path.join(os.path.abspath('')[:len(os.path.abspath(''))],  # - 25
-                                    f'{saving_folder}\\{problem}\\{partition}_{func_name}.json')
+                                    f'{saving_folder}/{problem}/{partition}_{func_name}.json')
         print("perfs are done for the function ", func_name)
 
     with open(new_json_dir,
@@ -58,7 +58,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
 
 def evaluate_the_GP_heuristics_and_SCIP_functions(problem, partition="test", GP_dics=None,
                                                   parameter_settings=False,instances=[], saving_folder="simulation_outcomes"):
-    folder = f"data\\{problem}\\{partition}\\"
+    folder = f"data/{problem}/{partition}/"
     if GP_dics is not None:
         for key in GP_dics.keys():
             evaluate_a_function_and_store_it(problem, GP_dics[key], folder, saving_folder, partition,

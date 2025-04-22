@@ -30,17 +30,17 @@ def evaluation_gnn_gp(problem, partition, gp_func_dic,do_gnn=True,build_set_of_i
         # building instances
         if build_set_of_instances:
             try:
-                shutil.rmtree(os.path.join(conf.ROOT_DIR, f"data\\{problem}\\{partition}"))
+                shutil.rmtree(os.path.join(conf.ROOT_DIR, f"data/{problem}/{partition}"))
             except:
                 ''
             data.build_instances.build_new_set_of_instances(problem, partition, nb_of_instances=nb_of_built_instances)
 
-        path = os.path.join(conf.ROOT_DIR, f"data\\{problem}\\{partition}")
+        path = os.path.join(conf.ROOT_DIR, f"data/{problem}/{partition}")
         for instance in os.listdir(path):
             is_ok = True
             # solving GNN
             if do_gnn:
-                main_GNN = os.path.join(conf.ROOT_DIR, "artificial_pbs\\subprocess_evaluation_gnn.py")
+                main_GNN = os.path.join(conf.ROOT_DIR, "artificial_pbs/subprocess_evaluation_gnn.py")
                 result_gnn = subprocess.run(
                     ['python', main_GNN, problem, partition, instance, saving_folder],
                     capture_output=True, text=True)
@@ -54,7 +54,7 @@ def evaluation_gnn_gp(problem, partition, gp_func_dic,do_gnn=True,build_set_of_i
                         ''
 
             # solving GP_function and heuristics and SCIP
-            GP_and_SCIP = os.path.join(conf.ROOT_DIR, "artificial_pbs\\subprocess_evaluation_gp_SCIPbaseline.py")
+            GP_and_SCIP = os.path.join(conf.ROOT_DIR, "artificial_pbs/subprocess_evaluation_gp_SCIPbaseline.py")
             result = subprocess.run(
                 ['python', GP_and_SCIP, problem, partition, json_gp_func_dic, instance, saving_folder],
                 capture_output=True, text=True)
@@ -68,7 +68,7 @@ def evaluation_gnn_gp(problem, partition, gp_func_dic,do_gnn=True,build_set_of_i
                 done+=1
                 print("one is done, with total of ",done)
                 dir = os.path.join(conf.ROOT_DIR,  # - 25
-                                   f'{saving_folder}\\{problem}\\')
+                                   f'{saving_folder}/{problem}/')
                 for one_perf_file in os.listdir(dir):
                     if re.match(partition, one_perf_file):
                         method = one_perf_file[len(partition)+1: len(one_perf_file) - 5]
@@ -87,7 +87,7 @@ def evaluation_gnn_gp(problem, partition, gp_func_dic,do_gnn=True,build_set_of_i
                         if re.match(partition, one_perf_file):
                             method = one_perf_file[len(partition) + 1: len(one_perf_file) - 5]
                             new_json_dir = os.path.join(conf.ROOT_DIR,  # - 25
-                                                        f'{saving_folder}\\{problem}\\{partition}_{method}.json')
+                                                        f'{saving_folder}/{problem}/{partition}_{method}.json')
                             with open(new_json_dir,
                                       "w+") as outfile:
                                 json.dump(evaluation[method], outfile)

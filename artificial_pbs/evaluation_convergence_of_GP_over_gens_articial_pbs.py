@@ -6,7 +6,7 @@ import conf
 def convergence_of_gp_over_generations(simulation_folder,saving=True):
     folder = os.path.join(simulation_folder, "GP_function")
     file = os.listdir(folder)[0]
-    path = folder+"\\"+file
+    path = folder+"/"+file
     print(path)
     with open(path
             ,

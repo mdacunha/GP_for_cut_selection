@@ -20,7 +20,7 @@ if __name__ == "__main__":
     max_n = 70  # Maximum number of nodes in the graph
     er_prob = 0.6  # Erdos-Rényi random graph parameter
 
-    training_file = "data\\gisp\\train_for_jupyter"
+    training_file = "data/gisp/train_for_jupyter"
 
     # Directory for training instances
     lp_dir_training = os.path.join(conf.ROOT_DIR, training_file)
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     # Generate training instances
     generate_instances(n, whichSet, setparam, alphaE2, min_n, max_n, er_prob, None, lp_dir_training, False)
 
-    test_file = "data\\gisp\\test_for_jupyter"
+    test_file = "data/gisp/test_for_jupyter"
 
     # Parameters for test instance generation
     n = 60  # Number of test instances, increased by 10 in case they are failures in the evaluation through all the baselines
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     nb_of_gen = 50  # Number of generations
     #seed = 0  # Random seed
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
-    saving_folder = os.path.join(conf.ROOT_DIR, "outcomes_jupyter\\GP_function")
+    saving_folder = os.path.join(conf.ROOT_DIR, "outcomes_jupyter/GP_function")
 
     
 
