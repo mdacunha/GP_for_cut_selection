@@ -1,0 +1,35 @@
+import gzip
+import os
+
+def create_sol_files(input_file, output_file):
+    with open(input_file, 'r') as file:
+        lines = file.readlines()
+
+    for line in lines:
+        parts = line.split()
+        status = parts[0].strip('=')
+        problem_name = parts[1].strip()
+        if len(parts) > 2:
+            solution_value = parts[2].strip()
+        else:
+            solution_value = "None"
+
+        sol_content = f"{status} {solution_value}"
+
+        sol_filename = f"{output_file}\\{problem_name}.sol"
+
+        with open(sol_filename, 'w') as sol_file:
+            sol_file.write(sol_content)
+
+        with open(sol_filename, 'rb') as sol_file:
+            with gzip.open(f"{output_file}\\{problem_name}.sol.gz", 'wb') as sol_gz_file:
+                sol_gz_file.writelines(sol_file)
+
+        os.remove(sol_filename)
+
+if __name__ == "__main__":
+    input_file = "solutions.txt"
+    output_file = "Solutions"
+    if not os.path.exists(output_file):
+        os.makedirs(output_file)
+    create_sol_files(input_file, output_file)
