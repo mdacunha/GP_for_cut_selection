@@ -28,7 +28,7 @@ operations = {
 
 class CustomCutSelector(Cutsel):
 
-    def __init__(self, comp_policy, num_cuts_per_round=20, min_orthogonality_root=0.9,
+    def __init__(self, comp_policy, num_cuts_per_round=10, min_orthogonality_root=0.9,
                  min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
