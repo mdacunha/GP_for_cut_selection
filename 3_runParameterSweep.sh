@@ -2,7 +2,7 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=16
 #SBATCH -c 1
-#SBATCH --time=0-12:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH -p batch
 #SBATCH --output=Param_sweep_output.out
 #SBATCH --error=Param_sweep_error.err

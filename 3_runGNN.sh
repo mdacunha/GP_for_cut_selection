@@ -2,7 +2,7 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=16
 #SBATCH -c 1
-#SBATCH --time=1-12:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH -p batch
 #SBATCH --output=GNN.out
 #SBATCH --error=GNN.err
