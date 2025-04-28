@@ -11,9 +11,9 @@ def copier_fichiers(dossier_source, dossier_destination):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source_dir_1", type=str, required=True, help="Path to the first source directory")
-    parser.add_argument("--source_dir_2", type=str, required=True, help="Path to the second source directory")
-    parser.add_argument("--destination_dir", type=str, required=True, help="Path to the destination directory")
+    parser.add_argument("source_dir_1", type=str, required=True, help="Path to the first source directory")
+    parser.add_argument("source_dir_2", type=str, required=True, help="Path to the second source directory")
+    parser.add_argument("destination_dir", type=str, required=True, help="Path to the destination directory")
     args = parser.parse_args()
 
     # Chemins des dossiers sources
