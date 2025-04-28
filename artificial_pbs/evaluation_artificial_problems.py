@@ -10,7 +10,7 @@ import conf
 import data.build_instances
 
 
-def evaluation_gnn_gp(problem, partition, gp_func_dic,do_gnn=True,build_set_of_instances=True,saving_folder="simulation_outcomes"):
+def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic,do_gnn=True,build_set_of_instances=True,saving_folder="simulation_outcomes"):
     nb_of_built_instances = 100
     json_gp_func_dic = json.dumps(gp_func_dic)
     is_ok = False
@@ -80,7 +80,7 @@ def evaluation_gnn_gp(problem, partition, gp_func_dic,do_gnn=True,build_set_of_i
                             perfs = json.load(openfile)
                         evaluation[method][instance] = perfs[list(perfs.keys())[0]]
 
-                if done == 50:
+                if done == nb_of_test_instances:
                     print("everything is solved")
                     print(evaluation)
                     for one_perf_file in os.listdir(dir):
@@ -89,7 +89,7 @@ def evaluation_gnn_gp(problem, partition, gp_func_dic,do_gnn=True,build_set_of_i
                             new_json_dir = os.path.join(conf.ROOT_DIR,  # - 25
                                                         f'{saving_folder}/{problem}/{partition}_{method}.json')
                             with open(new_json_dir,
-                                      "w+") as outfile:
+                                        "w+") as outfile:
                                 json.dump(evaluation[method], outfile)
                     print("ALL GUCCI GOOD")
                     return

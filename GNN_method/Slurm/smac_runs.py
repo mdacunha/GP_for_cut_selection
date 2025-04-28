@@ -10,6 +10,9 @@ import argparse
 import pdb
 import yaml
 import time
+import subprocess
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities import is_dir, get_filename, get_instances, get_random_seeds, run_python_slurm_job, \
     get_slurm_output_file, remove_slurm_files, remove_temp_files
 
@@ -196,6 +199,15 @@ def run_scip_instances(instance_dir, solution_dir, temp_dir, outfile_dir, rand_s
                                                     instance, rand_seed, sample_i, -1, True, True, False, False])
                 slurm_job_ids.append(ji)
 
+                """python_path = os.path.join(os.path.dirname(__file__), "solve_instance_seed_noise.py")
+                result = subprocess.run(
+                        ['python', python_path, temp_dir, instance_file, solution_file,
+                                                    instance, str(rand_seed), str(sample_i), str(-1), str(True), str(True), str(False), str(False)],
+                        capture_output=True, text=True)
+                outfile=os.path.join(outfile_dir, '%j__{}__seed__{}__sample__{}.out'.format(instance, rand_seed, sample_i))
+                with open(outfile, 'w') as out:
+                    out.write(result.stdout)"""
+
     # Now wait on the generated jobs by generating a checker job with dependencies
     signal_file = 'cleaner.txt'
     _ = run_python_slurm_job(python_file='Slurm/safety_check.py',
@@ -204,6 +216,14 @@ def run_scip_instances(instance_dir, solution_dir, temp_dir, outfile_dir, rand_s
                              time_limit=10,
                              arg_list=[os.path.join(temp_dir, signal_file)],
                              dependencies=slurm_job_ids)
+    
+    """python_path = os.path.join(os.path.dirname(__file__), "safety_check.py")
+    result = subprocess.run(
+            ['python', python_path, os.path.join(temp_dir, signal_file)],
+            capture_output=True, text=True)
+    outfile=os.path.join(outfile_dir, 'a--a--a.out')
+    with open(outfile, 'w') as out:
+        out.write(result.stdout)"""
 
     # Put the program to sleep until all of slurm jobs are complete
     time.sleep(10)

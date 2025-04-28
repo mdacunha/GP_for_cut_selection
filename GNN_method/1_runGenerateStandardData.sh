@@ -26,3 +26,5 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 # files_are_lps = False (They are .mps)
 # solution_dir_is_empty = False (We already have solutions in the provided folder)
 python Slurm/generate_standard_data.py MiniMIPLIB2017/Instances/ MiniMIPLIB2017/Solutions/ TransformedInstances/ TransformedSolutions/ RootResults/ FullResults/ TempFiles/ Outfiles/ 1 True False False
+
+python Slurm/generate_standard_data.py data/train/ None TransformedInstances/ TransformedSolutions/ RootResults/ FullResults/ TempFiles/ Outfiles/ 1 False True True

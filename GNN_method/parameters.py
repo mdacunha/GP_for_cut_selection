@@ -5,7 +5,7 @@ Each parameter here affects different bits of the experiments. The individual co
 # If you want to use the MIPLIB solution instead of one found after a 10 minute solve, set this to True
 # In the paper this was set to False for all data sets
 # > SETTED TO TRUE IN THIS FORK <
-USE_PROVIDED_SOLUTIONS = True
+USE_PROVIDED_SOLUTIONS = False #True
 
 # The time-limit that filters instances that take longer than this time to presolve. Time in seconds.
 # Note that this includes the root node LP solve if USE_PROVIDED_SOLUTIONS is True. In the paper this was set to 300

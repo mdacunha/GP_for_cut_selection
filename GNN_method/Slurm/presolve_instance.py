@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 import argparse
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities import is_dir, is_file, build_scip_model, get_filename, str_to_bool
 import parameters
 
@@ -45,6 +47,7 @@ if __name__ == '__main__':
         scip.freeProb()
         quit()
     if scip.getStatus() == 'optimal':
+        print('Instance {} with seed {} is optimal'.format(args.instance, args.rand_seed), flush=True)
         scip.freeProb()
         quit()
 

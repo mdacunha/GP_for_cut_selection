@@ -23,7 +23,8 @@ toolbox = base.Toolbox()
 
 def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
-            training_folder="train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0):
+            training_folder="train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, fixedcutsel=False, node_lim=-1):
+    tree_scores = {}
     if seed is None:
         seed = math.floor(random.random() * 10000)
     print("seed:", seed)
@@ -57,12 +58,18 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
     toolbox.register("compile", gp.compile, pset=pset)
 
     def evaluate(scoring_function):
-        print(str(scoring_function), flush=True)
+        tree_str = str(scoring_function)
+
+        # Vérifier si l'arbre existe déjà dans le dictionnaire
+        if tree_str in tree_scores:
+            return tree_scores[tree_str],
+
+        print(tree_str, flush=True)
 
         python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
         result = subprocess.run(
             ['python', python_path, str(scoring_function), problem, training_folder, node_select, str(time_limit),
-             str(seed), str(nb_of_instances)],
+             str(seed), str(nb_of_instances), str(fixedcutsel), str(node_lim)],
             capture_output=True, text=True)
         mean_solving_time_or_gap = result.stdout
 

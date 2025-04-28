@@ -2,11 +2,12 @@
 import argparse
 import torch
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utilities import remove_temp_files, str_to_bool, is_file, is_dir, get_instances, remove_slurm_files
 from GNN.GNN import GNNPolicy
 from Slurm.train_neural_network import create_tensorboard_writer, get_standard_solve_data, \
     get_rand_seeds_from_feature_generators, generate_batches, run_test_set
-from utilities import remove_temp_files, str_to_bool, is_file, is_dir, get_instances, remove_slurm_files
-
 
 def evaluate_neural_network(instance_dir, solution_dir, feature_dir, default_results_dir, results_dir, run_dir,
                             temp_dir, neural_network_path, outfile_dir, root):

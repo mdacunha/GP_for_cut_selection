@@ -8,6 +8,9 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import time
 from datetime import datetime
+import subprocess
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities import read_feature_vector_files, str_to_bool
 from utilities import remove_slurm_files, remove_temp_files, run_python_slurm_job, get_covariance_matrix
 from utilities import get_filename, is_dir, get_instances
@@ -398,6 +401,20 @@ def submit_slurm_jobs(instance_dir, solution_dir, temp_dir, outfile_dir, num_sam
                                           exclusive=exclusive)
                 slurm_job_ids.append(ji)
 
+                """python_path = os.path.join(os.path.dirname(__file__), "solve_instance_seed_noise.py")
+                result = subprocess.run(
+                        ['python', python_path, temp_dir,
+                                                    get_filename(instance_dir, instance, rand_seed, trans=True,
+                                                                 root=False, sample_i=None, ext='mps'),
+                                                    get_filename(solution_dir, instance, rand_seed, trans=True,
+                                                                 root=False, sample_i=None, ext='sol'),
+                                                    instance, str(rand_seed), str(sample_i), str(time_limit), str(root), str(True),
+                                                    str(False), str(False)],
+                        capture_output=True, text=True)
+                outfile=os.path.join(outfile_dir, '%j__{}__{}__{}.out'.format(instance, rand_seed, sample_i))
+                with open(outfile, 'w') as out:
+                    out.write(result.stdout)"""
+
     # Now submit the checker job that has dependencies slurm_job_ids
     ji = run_python_slurm_job(python_file='Slurm/safety_check.py',
                               job_name='cleaner',
@@ -405,6 +422,14 @@ def submit_slurm_jobs(instance_dir, solution_dir, temp_dir, outfile_dir, num_sam
                               time_limit=10,
                               arg_list=[os.path.join(temp_dir, 'cleaner.txt')],
                               dependencies=slurm_job_ids)
+    
+    """python_path = os.path.join(os.path.dirname(__file__), "safety_check.py")
+    result = subprocess.run(
+            ['python', python_path, os.path.join(temp_dir, 'cleaner.txt')],
+            capture_output=True, text=True)
+    outfile=os.path.join(outfile_dir, 'a--a--a.out')
+    with open(outfile, 'w') as out:
+        out.write(result.stdout)"""
 
     return 'cleaner.txt'
 

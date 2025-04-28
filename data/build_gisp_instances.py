@@ -71,7 +71,7 @@ def createIP(g, E2, ipfilename):
             
 def generate_instances(nb_of_instances, whichSet, setParam, alphaE2, min_n, max_n, er_prob, instance, lp_dir, solve) :
     #initial_time =time.time()
-    for i in range(nb_of_instances):
+    for i in range(nb_of_instances+1):
         solved = False
         while solved is False:
             solved = True

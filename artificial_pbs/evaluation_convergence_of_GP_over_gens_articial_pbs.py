@@ -3,7 +3,7 @@ import json
 import matplotlib.pyplot as plt
 import conf
 
-def convergence_of_gp_over_generations(simulation_folder,saving=True):
+def convergence_of_gp_over_generations(simulation_folder,saving=True, show=True):
     folder = os.path.join(simulation_folder, "GP_function")
     file = os.listdir(folder)[0]
     path = folder+"/"+file
@@ -26,7 +26,8 @@ def convergence_of_gp_over_generations(simulation_folder,saving=True):
         saving_path = os.path.join(conf.ROOT_DIR,
                                      f'simulation_outcomes/{problem}/convergence_plot_{problem}.pdf')
         plt.savefig(saving_path, format="pdf", bbox_inches="tight")
-    plt.show()
+    if show:
+        plt.show()
     print("the best GP function is ", perfs[1][0])
     return perfs[1][0]
 

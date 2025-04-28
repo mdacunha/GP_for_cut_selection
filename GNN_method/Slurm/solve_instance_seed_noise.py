@@ -2,6 +2,8 @@
 import os
 import argparse
 import yaml
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities import build_scip_model, str_to_bool, read_cut_selector_param_file, get_filename, is_dir, is_file
 
 

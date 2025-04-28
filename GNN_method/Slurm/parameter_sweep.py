@@ -5,6 +5,9 @@ import yaml
 import numpy as np
 import logging
 import time
+import subprocess
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities import remove_instance_solve_data, is_dir, get_instances, get_random_seeds, get_slurm_output_file, \
     str_to_bool, remove_slurm_files, get_filename, remove_temp_files, run_python_slurm_job
 import parameters
@@ -66,6 +69,14 @@ def parameter_sweep(instance_dir, solution_dir, default_results_dir, temp_dir, o
                                       arg_list=[temp_dir, instance_file, solution_file,
                                                 instance, rand_seed, sample_i, -1, root, True, False, False])
             slurm_job_ids.append(ji)
+            """python_path = os.path.join(os.path.dirname(__file__), "solve_instance_seed_noise.py")
+            result = subprocess.run(
+                    ['python', python_path, temp_dir, instance_file, solution_file,
+                                                instance, str(rand_seed), str(sample_i), str(-1), str(root), str(True), str(False), str(False)],
+                    capture_output=True, text=True)
+            outfile=os.path.join(outfile_dir, '%j__{}__seed__{}__sample__{}.out'.format(instance, rand_seed, sample_i))
+            with open(outfile, 'w') as out:
+                out.write(result.stdout)"""
 
     # Now submit the checker job that has dependencies slurm_job_ids
     signal_file = 'cleaner.txt'
@@ -75,6 +86,13 @@ def parameter_sweep(instance_dir, solution_dir, default_results_dir, temp_dir, o
                              time_limit=10,
                              arg_list=[os.path.join(temp_dir, signal_file)],
                              dependencies=slurm_job_ids)
+    """python_path = os.path.join(os.path.dirname(__file__), "safety_check.py")
+    result = subprocess.run(
+            ['python', python_path, os.path.join(temp_dir, signal_file)],
+            capture_output=True, text=True)
+    outfile=os.path.join(outfile_dir, 'a--a--a.out')
+    with open(outfile, 'w') as out:
+        out.write(result.stdout)"""
 
     print("Waiting for jobs to finish")
     # Wait on jobs to finish and extract the solve information

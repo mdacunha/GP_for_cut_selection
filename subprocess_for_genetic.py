@@ -14,12 +14,14 @@ if __name__ == "__main__":
     parser.add_argument('time_limit', type=int, help='time_limit')
     parser.add_argument('seed', type=int, help='seed')
     parser.add_argument('nb_of_instances', type=int, help='nb_of_instances')
+    parser.add_argument('fixedcutsel', type=bool, help='fixedcutsel')
+    parser.add_argument('node_lim', type=int, help='node_lim')
     args = parser.parse_args()
     if args.problem in ["gisp", "wpsm", "fcmcnf"]:
         lp_dir = os.path.join(os.path.dirname(__file__), f"data/{args.problem}/{args.training_folder}/")
         meannnodes, mean_val = scip_solver.perform_SCIP_instances_using_a_tuned_comp_policy(
             instances_folder=lp_dir,
-            cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True)#, time_limit=args.time_limit)
+            cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=args.fixedcutsel, node_lim=args.node_lim)#, time_limit=args.time_limit)
         print(mean_val)
     else:
         random.seed(args.seed)

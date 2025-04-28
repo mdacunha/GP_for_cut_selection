@@ -3,6 +3,8 @@ import os
 import argparse
 import numpy as np
 import yaml
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities import build_scip_model, is_dir, get_filename, remove_slurm_files, remove_temp_files
 from BranchRules.RootNodeFeatureExtractorBranchRule import RootNodeFeatureExtractor
 

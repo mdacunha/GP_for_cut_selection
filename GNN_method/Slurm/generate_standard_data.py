@@ -5,6 +5,9 @@ import yaml
 import logging
 import numpy as np
 import time
+import sys
+import subprocess
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utilities import run_python_slurm_job, get_filename, remove_temp_files, get_slurm_output_file, is_dir, \
     remove_slurm_files, is_file, str_to_bool
 import parameters
@@ -40,8 +43,17 @@ def run_slurm_job_with_random_seed(temp_dir, outfile_dir, instance_path, sol_pat
                               arg_list=[temp_dir, instance_path, sol_path, instance, rand_seed, 0, time_limit,
                                         root, fixed_cutsel, print_sol, print_stats],
                               exclusive=exclusive)
+    
+    """python_path = os.path.join(os.path.dirname(__file__), "solve_instance_seed_noise.py")
+    result = subprocess.run(
+            ['python', python_path, temp_dir, instance_path, str(sol_path), instance, str(rand_seed), str(0), str(time_limit),
+                    str(root), str(fixed_cutsel), str(print_sol), str(print_stats)],
+            capture_output=True, text=True)
+    outfile=os.path.join(outfile_dir, '%j__{}__seed__{}.out'.format(instance, rand_seed))
+    with open(outfile, 'w') as out:
+        out.write(result.stdout)"""
 
-    return ji
+    return ji #0
 
 
 def run_clean_up_slurm_job_and_wait(outfile_dir, temp_dir, dependencies):
@@ -505,6 +517,15 @@ def pre_solve_instances(instances, instance_paths, sol_paths, rand_seeds, transf
                                                 rand_seed, use_provided_sols],
                                       exclusive=True)
             slurm_job_ids.append(ji)
+            """python_path = os.path.join(os.path.dirname(__file__), "presolve_instance.py")
+            result = subprocess.run(
+                    ['python', python_path, transformed_problem_dir, instance_paths[i], str(sol_paths[i]), instance,
+                        str(rand_seed), str(use_provided_sols)],
+                    capture_output=True, text=True)
+            #print("Erreurs :", result.stderr)
+            #print("out :", result.stdout)
+            with open(outfile, 'w') as out:
+                out.write(result.stdout)"""
 
     run_clean_up_slurm_job_and_wait(outfile_dir, temp_dir, slurm_job_ids)
     
