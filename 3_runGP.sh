@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH --time=2-00:00:00
 #SBATCH -p batch
-#SBATCH --output=GP.out
-#SBATCH --error=GP.err
+#SBATCH --output=3_GP.out
+#SBATCH --error=3_GP.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 

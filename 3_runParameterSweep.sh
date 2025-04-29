@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH --time=3-00:00:00
 #SBATCH -p batch
-#SBATCH --output=Param_sweep_output.out
-#SBATCH --error=Param_sweep_error.err
+#SBATCH --output=3_Param_sweep_output.out
+#SBATCH --error=3_Param_sweep_error.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/GNN_method/
 

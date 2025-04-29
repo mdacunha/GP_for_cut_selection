@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH --time=3-00:00:00
 #SBATCH -p batch
-#SBATCH --output=SMAC_output.out
-#SBATCH --error=SMAC_error.err
+#SBATCH --output=3_SMAC_output.out
+#SBATCH --error=3_SMAC_error.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/GNN_method/
 

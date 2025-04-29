@@ -20,9 +20,9 @@ def lister_fichiers(dossier, transformed_folder):
 
 def supprimer_fichiers_non_communs(dossier1, dossier2, dossier_reference):
     """Supprime les fichiers des dossiers 1 et 2 qui ne sont pas dans le dossier de référence."""
-    fichiers_dossier1 = lister_fichiers(dossier1)
-    fichiers_dossier2 = lister_fichiers(dossier2)
-    fichiers_reference = lister_fichiers(dossier_reference)
+    fichiers_dossier1 = lister_fichiers(dossier1, False)
+    fichiers_dossier2 = lister_fichiers(dossier2, False)
+    fichiers_reference = lister_fichiers(dossier_reference, True)
 
     # Supprimer les fichiers de dossier1 qui ne sont pas dans dossier_reference
     for fichier in fichiers_dossier1 - fichiers_reference:

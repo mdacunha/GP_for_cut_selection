@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH --time=0-12:00:00
 #SBATCH -p batch
-#SBATCH --output=Gen_transformed_data_output.out
-#SBATCH --error=Gen_transformed_data_error.err
+#SBATCH --output=2_Gen_transformed_data_output.out
+#SBATCH --error=2_Gen_transformed_data_error.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/GNN_method/
 

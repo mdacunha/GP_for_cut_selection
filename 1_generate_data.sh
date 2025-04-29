@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH --time=0-00:05:00
 #SBATCH -p batch
-#SBATCH --output=Gen_data_output.out
-#SBATCH --error=Gen_data_error.err
+#SBATCH --output=1_Gen_data_output.out
+#SBATCH --error=1_Gen_data_error.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 
@@ -25,5 +25,7 @@ python generate_instances.py
 
 echo "Copying data to GNN folder"
 python copy_instances_for_GNN.py data/gisp/train data/gisp/test GNN_method/data/
+
+echo "ended of job at $(date)"
 
 micromamba deactivate
