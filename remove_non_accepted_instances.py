@@ -6,7 +6,7 @@ def lister_fichiers(dossier, transformed_folder):
     """Retourne la liste des noms de fichiers dans un dossier donné."""
     if transformed_folder:
         try:
-            return set(f.split("_trans")[0] + '.{}'.format('lp') for f in os.listdir(dossier) if os.path.isfile(os.path.join(dossier, f)))
+            return set(f.split("__trans")[0] + '.{}'.format('lp') for f in os.listdir(dossier) if os.path.isfile(os.path.join(dossier, f)))
         except FileNotFoundError:
             print(f"Le dossier {dossier} n'existe pas.")
             return set()
