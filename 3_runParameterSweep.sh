@@ -25,6 +25,9 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 # of 0.1 and sum 1.0. Takes a long time to run.
 # Using just a few instances from the Test set, for testing purposes.
 
+directory_path="FinalResults/"
+mkdir -p "$directory_path"
+
 echo "parameter sweep"
 python Slurm/parameter_sweep.py TransformedInstances/All TransformedSolutions/ Features/ RootResults/ FullResults/ FinalResults/ TempFiles/ Outfiles/ True 
 

@@ -23,6 +23,9 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 echo "Generating data"
 python generate_instances.py
 
+directory_path="GNN_method/data/"
+mkdir -p "$directory_path"
+
 echo "Copying data to GNN folder"
 python copy_instances_for_GNN.py data/gisp/train data/gisp/test GNN_method/data/
 

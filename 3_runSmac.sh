@@ -20,6 +20,9 @@ echo "Répertoire de soumission : ${SLURM_SUBMIT_DIR}"
 
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
+directory_path="SmacResults/"
+mkdir -p "$directory_path"
+
 echo "SMAC"
 python Slurm/smac_runs.py TransformedInstances/Train/ TransformedInstances/Test/ TransformedSolutions/ RootResults/ SmacResults/ TempFiles Outfiles 250 667
 

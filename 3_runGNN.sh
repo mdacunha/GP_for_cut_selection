@@ -20,6 +20,13 @@ echo "Répertoire de soumission : ${SLURM_SUBMIT_DIR}"
 
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
+directory_path="Features/"
+mkdir -p "$directory_path"
+directory_path="ResultsGCNN/"
+mkdir -p "$directory_path"
+directory_path="Tensorboard/"
+mkdir -p "$directory_path"
+
 echo "Generating features"
 python Slurm/generate_feature_vectors.py TransformedInstances/All Features/ TempFiles/ Outfiles/ 1
 

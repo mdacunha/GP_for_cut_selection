@@ -130,6 +130,10 @@ if __name__ == "__main__":
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
     simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes")
+    function_folder = os.path.join(simulation_folder, "GP_function")
+    problem_folder = os.path.join(simulation_folder, problem)
+    os.makedirs(function_folder, exist_ok=True)  # Create the problem folder if it doesn't exist
+    os.makedirs(problem_folder, exist_ok=True)  
 
     # Evaluate the convergence of GP across generations
     gp_function = convergence_of_gp_over_generations(simulation_folder,saving=False, show=False)

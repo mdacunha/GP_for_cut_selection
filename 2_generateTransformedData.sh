@@ -20,6 +20,19 @@ echo "Répertoire de soumission : ${SLURM_SUBMIT_DIR}"
 
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
+directory_path="TransformedSolutions/"
+mkdir -p "$directory_path"
+directory_path="TransformedInstances/All/"
+mkdir -p "$directory_path"
+directory_path="RootResults/"
+mkdir -p "$directory_path"
+directory_path="FullResults/"
+mkdir -p "$directory_path"
+directory_path="TempFiles/"
+mkdir -p "$directory_path"
+directory_path="Outfiles/"
+mkdir -p "$directory_path"
+
 echo "Generating transformed data"
 python Slurm/generate_standard_data.py data/ TransformedSolutions/ TransformedInstances/All TransformedSolutions/ RootResults/ FullResults/ TempFiles/ Outfiles/ 1 False True True
 

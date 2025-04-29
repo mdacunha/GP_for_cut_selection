@@ -24,7 +24,6 @@ if __name__ == "__main__":
     max_n=30
     ########### SMALL PARAM FOR TESTING ###########
 
-
     training_file = "data/gisp/train"
 
     # Directory for training instances
@@ -36,7 +35,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error cleaning {lp_dir_training}: {e}")
     else:
-        os.mkdir(lp_dir_training)
+        os.makedirs(lp_dir_training)
 
     # Generate training instances
     generate_instances(n, whichSet, setparam, alphaE2, min_n, max_n, er_prob, None, lp_dir_training, False)
@@ -54,7 +53,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error cleaning {lp_dir_test}: {e}")
     else:
-        os.mkdir(lp_dir_test)
+        os.makedirs(lp_dir_test)
 
     # Generate test instances"
     generate_instances(n_test, whichSet, setparam, alphaE2, min_n, max_n, er_prob, None, lp_dir_test, False)
