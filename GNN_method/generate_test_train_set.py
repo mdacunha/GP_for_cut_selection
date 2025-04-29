@@ -93,4 +93,4 @@ if __name__ == "__main__":
     n = args.percentage_or_number_for_test_set  # Remplacez par le nombre de fichiers (ex : 2) que vous souhaitez sélectionner ou le pourcentage (ex : 20) si pas de copie des données de test de GP
     mode = args.mode  # Remplacez par le mode souhaité ("test" ou "train+test")
     copy_test_set = args.copy_test_set  # Remplacez par True ou False selon que vous souhaitez copier le test set de GP ou non
-    select_random_files(mode, n, original_data, copy_test_set, source_directory=os.path.join(source_directory, "All"), train_folder=os.path.join(source_directory, "Train"), test_folder=os.path.join(source_directory, "Test"))
+    select_random_files(mode, n, original_data, copy_test_set, source_dir=os.path.join(source_directory, "All"), train_folder=os.path.join(source_directory, "Train"), test_folder=os.path.join(source_directory, "Test"))

@@ -2,8 +2,9 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=16
 #SBATCH -c 1
-#SBATCH --time=3-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH -p batch
+##SBATCH --qos=long
 #SBATCH --output=3_SMAC_output.out
 #SBATCH --error=3_SMAC_error.err
 
@@ -22,9 +23,11 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 
 directory_path="SmacResults/"
 mkdir -p "$directory_path"
+directory_path="TempFiles/SMAC/"
+mkdir -p "$directory_path"
 
 echo "SMAC"
-python Slurm/smac_runs.py TransformedInstances/Train/ TransformedInstances/Test/ TransformedSolutions/ RootResults/ SmacResults/ TempFiles Outfiles 250 667
+python Slurm/smac_runs.py TransformedInstances/Train/ TransformedInstances/Test/ TransformedSolutions/ RootResults/ SmacResults/ TempFiles/SMAC/ Outfiles 250 667
 
 echo "ended of job at $(date)"
 

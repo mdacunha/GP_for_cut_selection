@@ -2,8 +2,9 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=16
 #SBATCH -c 1
-#SBATCH --time=3-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH -p batch
+##SBATCH --qos=long
 #SBATCH --output=3_Param_sweep_output.out
 #SBATCH --error=3_Param_sweep_error.err
 
@@ -27,9 +28,12 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 
 directory_path="FinalResults/"
 mkdir -p "$directory_path"
+directory_path="TempFiles/PS/"
+mkdir -p "$directory_path"
+
 
 echo "parameter sweep"
-python Slurm/parameter_sweep.py TransformedInstances/All TransformedSolutions/ Features/ RootResults/ FullResults/ FinalResults/ TempFiles/ Outfiles/ True 
+python Slurm/parameter_sweep.py TransformedInstances/All TransformedSolutions/ Features/ RootResults/ FullResults/ FinalResults/ TempFiles/PS/ Outfiles/ True 
 
 echo "ended of job at $(date)"
 

@@ -4,6 +4,7 @@
 #SBATCH -c 1
 #SBATCH --time=2-00:00:00
 #SBATCH -p batch
+##SBATCH --qos=long
 #SBATCH --output=3_GP.out
 #SBATCH --error=3_GP.err
 
