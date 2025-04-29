@@ -36,9 +36,9 @@ def supprimer_fichiers_non_communs(dossier1, dossier2, dossier_reference):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("source_dir", type=str, required=True, help="Source directory containing the files")
-    parser.add_argument("original_data_train_set", type=str, required=True, help="Source directory containing the train set files") 
-    parser.add_argument("original_data_test_set", type=str, required=True, help="Source directory containing the test set files")
+    parser.add_argument("source_dir", type=str, help="Source directory containing the files")
+    parser.add_argument("original_data_train_set", type=str, help="Source directory containing the train set files") 
+    parser.add_argument("original_data_test_set", type=str, help="Source directory containing the test set files")
     args = parser.parse_args()
 
     dossier_reference = args.source_dir
