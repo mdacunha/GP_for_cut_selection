@@ -21,7 +21,7 @@ echo "Répertoire de soumission : ${SLURM_SUBMIT_DIR}"
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
 echo "Generating transformed data"
-python Slurm/generate_standard_data.py data/ None TransformedInstances/All TransformedSolutions/ RootResults/ FullResults/ TempFiles/ Outfiles/ 1 False True True
+python Slurm/generate_standard_data.py data/ TransformedSolutions/ TransformedInstances/All TransformedSolutions/ RootResults/ FullResults/ TempFiles/ Outfiles/ 1 False True True
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 echo "removing non accepted instances from GP dataset for comparison on the same dataset"
