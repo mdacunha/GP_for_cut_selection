@@ -26,12 +26,12 @@ def supprimer_fichiers_non_communs(dossier1, dossier2, dossier_reference):
 
     # Supprimer les fichiers de dossier1 qui ne sont pas dans dossier_reference
     for fichier in fichiers_dossier1 - fichiers_reference:
-        chemin_fichier = os.path.join(dossier1, fichier)
+        chemin_fichier = os.path.join(fichiers_dossier1, fichier)
         os.remove(chemin_fichier)
 
     # Supprimer les fichiers de dossier2 qui ne sont pas dans dossier_reference
     for fichier in fichiers_dossier2 - fichiers_reference:
-        chemin_fichier = os.path.join(dossier2, fichier)
+        chemin_fichier = os.path.join(fichiers_dossier2, fichier)
         os.remove(chemin_fichier)
 
 if __name__ == "__main__":
