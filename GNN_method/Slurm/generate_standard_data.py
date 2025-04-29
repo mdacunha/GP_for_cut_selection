@@ -608,7 +608,7 @@ def remove_previous_run_data(data_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('problem_dir', type=is_dir)
-    parser.add_argument('solution_dir', type=is_dir)
+    parser.add_argument('solution_dir', type=any)
     parser.add_argument('transformed_problem_dir', type=is_dir)
     parser.add_argument('transformed_solution_dir', type=is_dir)
     parser.add_argument('root_solve_results_dir', type=is_dir)
