@@ -484,7 +484,7 @@ def run_python_slurm_job(python_file, job_name, outfile, time_limit, arg_list, d
     p = subprocess.Popen(cmd, env=my_env, stdout=subprocess.PIPE)
     p.wait()
 
-    print('Submitted job {} with command {}'.format(job_name, cmd))
+    #print('Submitted job {} with command {}'.format(job_name, cmd))
     # Now access the stdout of the subprocess for the job ID
     job_line = ''
     for line in p.stdout:

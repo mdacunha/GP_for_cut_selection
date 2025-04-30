@@ -26,6 +26,8 @@ mkdir -p "$directory_path"
 directory_path="TempFiles/SMAC/"
 mkdir -p "$directory_path"
 
+###### TO RUN ONLY IF THE TRAIN AND TEST SETS EXIST ######
+
 echo "SMAC"
 python Slurm/smac_runs.py TransformedInstances/Train/ TransformedInstances/Test/ TransformedSolutions/ RootResults/ SmacResults/ TempFiles/SMAC/ Outfiles 250 667
 

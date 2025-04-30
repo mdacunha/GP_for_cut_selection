@@ -42,7 +42,7 @@ def select_random_files(mode, n, original_data, copy_test_set, source_dir, train
 
             # Copier le test set de GP dans le répertoire de destination
             for file_name in all_files:
-                file = file_name.split("_trans")[0]
+                file = file_name.split("__trans")[0]
                 src_file = os.path.join(original_data, file + '.{}'.format('lp'))
                 if os.path.exists(src_file):
                     dest_file = os.path.join(test_folder, file_name)
