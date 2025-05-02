@@ -12,6 +12,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('seed', type=str, help="Seed that we choose")
     parser.add_argument('node_lim', type=str, help="Node limit for the GP function")
+    parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
     n_test_instances = 60  # Number of test instances, increased by 10 in case they are failures in the evaluation through all the baselines
@@ -72,6 +73,7 @@ if __name__ == "__main__":
     nb_of_gen = 15  # Number of generations
     seed = args.seed  # Random seed
     node_lim = args.node_lim
+    sol_path = args.sol_path  # Path to the solution file
 
     try:
         seed = int(seed)
@@ -91,11 +93,12 @@ if __name__ == "__main__":
     # Tournament parameters
     fitness_size = 5  # Number of individuals in the fitness tournament
     parsimony_size = 1.2  # Parameter for size-based tournament
-    time_limit = None  # Time limit (not applicable for artificial problems)
+    time_limit = 0#180  # Time limit (not applicable for artificial problems)
     nb_of_instances = 0  # Number of instances (not applicable for artificial problems)
 
     # Environment parametrisation for SCIP solving
     fixedcutsel = True
+    transformed = True  # Whether to use the transformed version of the problem for comparison with GNN
     
     ########### SMALL PARAM FOR TESTING ###########
     n_test_instances=1
@@ -125,7 +128,9 @@ if __name__ == "__main__":
         time_limit=time_limit,
         nb_of_instances=nb_of_instances,
         fixedcutsel=fixedcutsel,
-        node_lim=node_lim
+        node_lim=node_lim,
+        sol_path=sol_path,
+        transformed=transformed
     )
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
@@ -142,7 +147,8 @@ if __name__ == "__main__":
     print(gp_function, flush=True)
     problem = "gisp"
     partition= "test"
-    evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic,do_gnn=False, build_set_of_instances=False,saving_folder="outcomes")
+    evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
+                                                   fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder="outcomes")
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["test"], saving_folder="outcomes")

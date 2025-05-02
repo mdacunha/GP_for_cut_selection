@@ -31,7 +31,7 @@ ARGUMENT1=$1
 ARGUMENT2=$2
 
 echo "run GP"
-python main.py "$ARGUMENT1" "$ARGUMENT2"
+python main.py "$ARGUMENT1" "$ARGUMENT2" None
 
 echo "Fin du job à $(date)"
 

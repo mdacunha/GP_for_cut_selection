@@ -44,12 +44,13 @@ def select_random_files(mode, n, original_data, copy_test_set, source_dir, train
             for file_name in all_files:
                 file = file_name.split("__trans")[0]
                 src_file = os.path.join(original_data, file + '.{}'.format('lp'))
+                or_file_name = os.path.join(source_dir, file_name)
                 if os.path.exists(src_file):
                     dest_file = os.path.join(test_folder, file_name)
-                    shutil.copy2(file_name, dest_file)
+                    shutil.copy2(or_file_name, dest_file)
                 else:
                     dest_file = os.path.join(train_folder, file_name)
-                    shutil.copy2(file_name, dest_file)
+                    shutil.copy2(or_file_name, dest_file)
         else:
             # Sélectionner aléatoirement n fichiers pour le test
             n = int(len(all_files) * (n / 100))

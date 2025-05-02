@@ -10,7 +10,8 @@ import conf
 import data.build_instances
 
 
-def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic,do_gnn=True,build_set_of_instances=True,saving_folder="simulation_outcomes"):
+def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic, time_limit=None, 
+                                                   fixedcutsel=False, node_lim=-1, sol_path=None, do_gnn=True,build_set_of_instances=True,saving_folder="simulation_outcomes"):
     nb_of_built_instances = 100
     json_gp_func_dic = json.dumps(gp_func_dic)
     is_ok = False
@@ -23,7 +24,7 @@ def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic,do_g
                       "GP_parsimony_parameter_1.2": {}, "GP_parsimony_parameter_1.4": {}}
     done = 0
     while is_ok is False:
-        print("here we go again")
+        print("here we go again", flush=True)
 
 
 
@@ -35,7 +36,7 @@ def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic,do_g
                 ''
             data.build_instances.build_new_set_of_instances(problem, partition, nb_of_instances=nb_of_built_instances)
 
-        path = os.path.join(conf.ROOT_DIR, f"data/{problem}/{partition}")
+        path = os.path.join(conf.ROOT_DIR, f"GNN_method/TransformedInstances/{partition}")
         for instance in os.listdir(path):
             is_ok = True
             # solving GNN
@@ -56,7 +57,8 @@ def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic,do_g
             # solving GP_function and heuristics and SCIP
             GP_and_SCIP = os.path.join(conf.ROOT_DIR, "artificial_pbs/subprocess_evaluation_gp_SCIPbaseline.py")
             result = subprocess.run(
-                ['python', GP_and_SCIP, problem, partition, json_gp_func_dic, instance, saving_folder],
+                ['python', GP_and_SCIP, problem, partition, json_gp_func_dic, str(time_limit), 
+                                                   str(fixedcutsel), str(node_lim), sol_path, instance, saving_folder],
                 capture_output=True, text=True)
             print("result for", partition, "GP_function and SCIP : ", result.stdout)
 

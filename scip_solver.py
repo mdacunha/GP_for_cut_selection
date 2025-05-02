@@ -1,5 +1,7 @@
 from pathlib import Path
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "GNN_method"))
 
 import pyscipopt
 from pyscipopt import Model, quicksum, Nodesel, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_PARAMSETTING
@@ -9,35 +11,31 @@ import argparse
 import numpy as np
 import time
 
+from utilities import get_filename
 from conf import *
 from cut_selection_policies import CustomCutSelector
 from constraintHandler_GP import RepeatSepaConshdlr
 
 
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
-                          time_limit=None, fixedcutsel=False, node_lim=-1):
+                          time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None):
     model = Model()
     model.hideOutput()
-    model.readProblem(instance_path)
     optsol = None
-    if parameter_settings:
+    if not fixedcutsel:
+        model.setParam('limits/nodes', node_lim)
+        model.setParam('presolving/maxrounds', 1)
+        model.setParam('estimation/restarts/restartlimit', 0)
+        model.setParam('estimation/restarts/restartpolicy', 'n')
+        model.setParam('presolving/maxrestarts', 0)
+        model.disablePropagation()        
+    if not parameter_settings:
         model.setParam('constraints/linear/upgrade/logicor', 0)
         model.setParam('constraints/linear/upgrade/indicator', 0)
         model.setParam('constraints/linear/upgrade/knapsack', 0)
         model.setParam('constraints/linear/upgrade/setppc', 0)
         model.setParam('constraints/linear/upgrade/xor', 0)
         model.setParam('constraints/linear/upgrade/varbound', 0)
-    if time_limit is not None:
-        model.setRealParam("limits/time", time_limit)
-    if fixedcutsel:
-        model.setParam('presolving/maxrounds', 1)
-        model.setParam('estimation/restarts/restartlimit', 0)
-        model.setParam('estimation/restarts/restartpolicy', 'n')
-        model.setParam('presolving/maxrestarts', 0)
-        model.disablePropagation()
-        model.setHeuristics(SCIP_PARAMSETTING.OFF)
-        model.setParam('branching/leastinf/priority', 10000000)
-        model.setParam('limits/nodes', node_lim)
     if cut_comp == "SCIP":
         pass
     else:
@@ -54,8 +52,27 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         model.setParam('separating/maxstallroundsroot', num_rounds)
         model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
 
+    if not fixedcutsel:
+        model.setHeuristics(SCIP_PARAMSETTING.OFF)
+        model.setParam('branching/leastinf/priority', 10000000)
+
+    if time_limit != 0:
+        model.setRealParam("limits/time", time_limit)
+        
+    model.readProblem(instance_path)
+    if sol_path != "None" and sol_path is not None:
+        real_sol_path = get_filename(sol_path, instance_path.split("/")[-1].split(".lp")[0], 1, trans=True, root=False, sample_i=None, ext='sol')
+        assert os.path.isfile(real_sol_path) and '.sol' in real_sol_path, 'Sol is {}'.format(real_sol_path)
+        sol = model.readSolFile(real_sol_path)
+        model.addSol(sol)
+    
+    """if model.getObjectiveSense() == 'maximize':
+        obj_offset = model.getObjoffset()
+        model.setObjective(-1 * model.getObjective(), sense='minimize', clear='true')
+        model.addObjoffset(-1 * obj_offset)"""
+
     model.optimize()
-    if time_limit is not None:
+    if time_limit != 0:
         return model.getNNodes(), model.getGap()
     return model.getNNodes(), model.getSolvingTime()
 
@@ -67,7 +84,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                      fixedcutsel=False,
                                                      node_lim=-1,
                                                      time_limit=None,
-                                                     instances_indexes=None):  # comp policy is either a str LB or estimate of a function
+                                                     instances_indexes=None,
+                                                     sol_path=None):  # comp policy is either a str LB or estimate of a function
     sol_times = []
     nnodes = []
     nb_done = 0
@@ -80,7 +98,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
 
                 visited_nodes, time_or_gap = perform_SCIP_instance(instance_path, cut_comp, node_select,
                                                                    parameter_settings=parameter_settings,
-                                                                   time_limit=time_limit, fixedcutsel=fixedcutsel, node_lim=node_lim)
+                                                                   time_limit=time_limit, fixedcutsel=fixedcutsel, 
+                                                                   node_lim=node_lim, sol_path=sol_path)
                 sol_times.append(time_or_gap)
                 nnodes.append(visited_nodes)
                 nb_done += 1

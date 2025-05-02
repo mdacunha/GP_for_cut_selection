@@ -28,7 +28,7 @@ directory_path="RootResults/"
 mkdir -p "$directory_path"
 directory_path="FullResults/"
 mkdir -p "$directory_path"
-directory_path="TempFiles/"
+directory_path="TempFiles/Generate/"
 mkdir -p "$directory_path"
 directory_path="Outfiles/"
 mkdir -p "$directory_path"
@@ -38,17 +38,19 @@ directory_path="Features/"
 mkdir -p "$directory_path"
 
 echo "Generating transformed data"
-python Slurm/generate_standard_data.py data/ TransformedSolutions/ TransformedInstances/All TransformedSolutions/ RootResults/ FullResults/ TempFiles/ Outfiles/ 1 False True True
+python Slurm/generate_standard_data.py data/ TransformedSolutions/ TransformedInstances/All TransformedSolutions/ RootResults/ FullResults/ TempFiles/Generate/ Outfiles/ 1 False True True
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 echo "removing non accepted instances from GP dataset for comparison on the same dataset"
 python remove_non_accepted_instances.py GNN_method/TransformedInstances/All data/gisp/train data/gisp/test
 
+cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/GNN_method/
 echo "Generating features"
 python Slurm/generate_feature_vectors.py TransformedInstances/All Features/ TempFiles/GNN/ Outfiles/ 1
 
+cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 echo "Generating training and test sets of the transformed data"
-python generate_test_train_set.py data/ TransformedInstances/ 20 'train+test' True
+python GNN_method/generate_test_train_set.py data/gisp/test  GNN_method/TransformedInstances/ 20 'train+test' True
 
 echo "ended of job at $(date)"
 
