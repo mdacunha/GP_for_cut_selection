@@ -17,12 +17,12 @@ if __name__ == "__main__":
     max_n = 70  # Maximum number of nodes in the graph
     er_prob = 0.6  # Erdos-Rényi random graph parameter
 
-    ########### SMALL PARAM FOR TESTING ###########
+    """########### SMALL PARAM FOR TESTING ###########
     n=2
     n_test=2
     min_n=20
     max_n=30
-    ########### SMALL PARAM FOR TESTING ###########
+    ########### SMALL PARAM FOR TESTING ###########"""
 
     training_file = "data/gisp/train"
 

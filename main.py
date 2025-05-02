@@ -100,14 +100,14 @@ if __name__ == "__main__":
     fixedcutsel = True
     transformed = True  # Whether to use the transformed version of the problem for comparison with GNN
     
-    ########### SMALL PARAM FOR TESTING ###########
+    """########### SMALL PARAM FOR TESTING ###########
     n_test_instances=1
     initial_pop=5
     nb_of_gen=2
     seed=1
     node_lim=1
     fitness_size=2
-    ############ SMALL PARAM FOR TESTING ###########
+    ############ SMALL PARAM FOR TESTING ###########"""
 
     # Construct a unique name for the run
     name = f"{problem}_pop_{initial_pop}_nb_gen{nb_of_gen}_seed_{seed}"
