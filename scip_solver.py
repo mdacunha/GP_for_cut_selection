@@ -47,9 +47,8 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
                                 sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
                                 eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
                                 presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
-        if cut_comp != "SCIP" and cut_comp != "SCIP_limited":
-            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
-            model.includeCutsel(cut_selector, "", "", 536870911)
+        cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
+        model.includeCutsel(cut_selector, "", "", 536870911)
         model.setParam('separating/maxstallroundsroot', num_rounds)
         model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
 
@@ -61,6 +60,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         model.setRealParam("limits/time", time_limit)
         
     model.readProblem(instance_path)
+    
     if sol_path != "None" and sol_path is not None:
         real_sol_path = get_filename(sol_path, instance_path.split("/")[-1].split(".lp")[0], 1, trans=True, root=False, sample_i=None, ext='sol')
         assert os.path.isfile(real_sol_path) and '.sol' in real_sol_path, 'Sol is {}'.format(real_sol_path)

@@ -69,7 +69,7 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, partition="test", GP_
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, func_name="GP_parsimony_parameter_"+str(key), instances=instances)
 
 
-    functions = ["SCIP", "SCIP_limited"]#, "GNN"]#"best_estimate_BFS","best_estimate_DFS","best_LB_BFS"]
+    functions = ["SCIP"]#, "GNN"]#"best_estimate_BFS","best_estimate_DFS","best_LB_BFS"]
     for function in functions:
         evaluate_a_function_and_store_it(problem, function, folder, saving_folder, partition,
                                          parameter_settings=parameter_settings, time_limit=time_limit, sol_path=sol_path, instances=instances)

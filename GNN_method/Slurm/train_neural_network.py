@@ -138,8 +138,8 @@ def train_network(instance_dir, test_instance_dir, solution_dir, feature_dir, de
                                                                                         signal_file)
 
             # Generate scores based on solve_information
-            (scores, gaps, dual_bounds, primal_bounds, lp_iterations, n_nodes, n_cuts, sol_times, sol_fracs,
-             primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
+            (scores, gaps, dual_bounds, primal_bounds, lp_iterations, n_nodes, n_cuts, sol_times, standard_solve_time_scores, 
+             batch_solve_time_scores, sol_fracs, primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
 
             # Use our generated scores to update our neural network
             optimiser = reinforce_and_update_neural_network(optimiser, scores, sampled_cut_params, multivariate_normals)
@@ -155,7 +155,7 @@ def train_network(instance_dir, test_instance_dir, solution_dir, feature_dir, de
 
             # There's an issue with memory management as subprocess duplicates memory when it needs only a fraction
             # We will flag some variables for the garbage collector preemptively
-            del scores, gaps, dual_bounds, primal_bounds, lp_iterations, n_nodes, n_cuts, sol_times, sol_fracs
+            del scores, gaps, dual_bounds, primal_bounds, lp_iterations, n_nodes, n_cuts, sol_times, sol_fracs, standard_solve_time_scores, batch_solve_time_scores
             del primal_dual_ints
 
             # Increment the run index
@@ -324,6 +324,23 @@ def calculate_scores(batch_data, standard_data):
                         scores[instance][rand_seed][-1] /= abs(scores[instance][rand_seed][-1])
 
         return scores
+    
+    def get_score_time(metric, standard : bool):
+
+        scores = {}
+
+        for instance in batch_data:
+            scores[instance] = {}
+            for rand_seed in batch_data[instance]:
+                scores[instance][rand_seed] = []
+
+                if standard:
+                    scores[instance][rand_seed].append(standard_data[instance][rand_seed][metric])
+                else:
+                    for sample_i in batch_data[instance][rand_seed]:
+                        scores[instance][rand_seed].append(batch_data[instance][rand_seed][sample_i][metric])                   
+
+        return scores
 
     # We use the following measures: dual_bound, primal_bound, gap, lp_iterations, num_nodes, num_cuts, solve_time,
     # solution_fractionality, primal_dual_integral, primal_dual_difference
@@ -342,6 +359,10 @@ def calculate_scores(batch_data, standard_data):
     num_cut_scores = get_scores_by_metric('num_cuts', lower_is_better=False)
     # Get the solve_time
     solve_time_scores = get_scores_by_metric('solve_time')
+    # Get the solving time for the standard solve
+    standard_solve_time_scores = get_score_time('solve_time', True)
+    # Get the solving time for the batch solve
+    batch_solve_time_scores = get_score_time('solve_time', False)
     # Get the solution fractionality
     sol_fractionality_scores = get_scores_by_metric('solution_fractionality')
     # Get the primal dual integral scores
@@ -354,7 +375,8 @@ def calculate_scores(batch_data, standard_data):
         _ = get_scores_by_metric(cut_sel_param, difference=False)
 
     return (primal_dual_difference_scores, gap_scores, dual_bound_scores, primal_bound_scores, lp_iteration_scores,
-            num_node_scores, num_cut_scores, solve_time_scores, sol_fractionality_scores, primal_dual_integral_scores)
+            num_node_scores, num_cut_scores, solve_time_scores, standard_solve_time_scores, batch_solve_time_scores, 
+            sol_fractionality_scores, primal_dual_integral_scores)
 
 
 def submit_slurm_jobs(instance_dir, solution_dir, temp_dir, outfile_dir, num_samples, batch_instances, rand_seeds,
@@ -785,8 +807,8 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
                                                                                 signal_file, root=root)
 
     # Generate scores based on solve_information
-    (scores, gaps, dual_bounds, primal_bounds, lp_iters, num_nodes, num_cuts, sol_times, sol_fracs,
-     primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
+    (scores, gaps, dual_bounds, primal_bounds, lp_iters, num_nodes, num_cuts, sol_times, standard_solve_time_scores, 
+     batch_solve_time_scores, sol_fracs, primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
 
     # Add all data related to the batch to the summary writer
     tensorboard_writer = add_data_to_tensorboard_writer(tensorboard_writer, batch_data, scores, gaps,
@@ -812,6 +834,8 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
             sol_frac = float(np.mean([sol_fracs[instance][rand_seed][0] for rand_seed in rand_seeds]))
             gap = float(np.mean([gaps[instance][rand_seed][0] for rand_seed in rand_seeds]))
             solve_time = float(np.mean([sol_times[instance][rand_seed][0] for rand_seed in rand_seeds]))
+            standard_solve_time = float(np.mean([standard_solve_time_scores[instance][rand_seed][0] for rand_seed in rand_seeds]))
+            batch_solve_time = float(np.mean([batch_solve_time_scores[instance][rand_seed][0] for rand_seed in rand_seeds]))
             parameters = []
             for rand_seed in rand_seeds:
                 parameters.append([bd[instance][rand_seed][0]['dir_cut_off'],
@@ -822,7 +846,8 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
                                     'obj_parallelism': obj_parallel, 'score': score, 'dual_bound': dual_bound,
                                     'gap': gap, 'num_lp_iterations': lp_iter, 'num_nodes': num_node,
                                     'num_cuts': num_cut, 'solution_fractionality': sol_frac, 'parameters': parameters,
-                                    'improvement': score, 'solve_time': solve_time}}
+                                    'improvement': score, 'solve_time': solve_time, 'standard_solve_time': standard_solve_time,
+                                    'batch_solve_time': batch_solve_time}}
             if single_instance is None:
                 full_yaml_data[instance] = yaml_data[instance]
             else:

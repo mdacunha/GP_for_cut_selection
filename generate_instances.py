@@ -18,8 +18,8 @@ if __name__ == "__main__":
     er_prob = 0.6  # Erdos-Rényi random graph parameter
 
     """########### SMALL PARAM FOR TESTING ###########
-    n=2
-    n_test=2
+    n=4
+    n_test=4
     min_n=20
     max_n=30
     ########### SMALL PARAM FOR TESTING ###########"""
