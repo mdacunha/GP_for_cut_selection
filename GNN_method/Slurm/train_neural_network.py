@@ -811,6 +811,7 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
             num_cut = float(np.mean([num_cuts[instance][rand_seed][0] for rand_seed in rand_seeds]))
             sol_frac = float(np.mean([sol_fracs[instance][rand_seed][0] for rand_seed in rand_seeds]))
             gap = float(np.mean([gaps[instance][rand_seed][0] for rand_seed in rand_seeds]))
+            solve_time = float(np.mean([sol_times[instance][rand_seed][0] for rand_seed in rand_seeds]))
             parameters = []
             for rand_seed in rand_seeds:
                 parameters.append([bd[instance][rand_seed][0]['dir_cut_off'],
@@ -821,7 +822,7 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
                                     'obj_parallelism': obj_parallel, 'score': score, 'dual_bound': dual_bound,
                                     'gap': gap, 'num_lp_iterations': lp_iter, 'num_nodes': num_node,
                                     'num_cuts': num_cut, 'solution_fractionality': sol_frac, 'parameters': parameters,
-                                    'improvement': score}}
+                                    'improvement': score, 'solve_time': solve_time}}
             if single_instance is None:
                 full_yaml_data[instance] = yaml_data[instance]
             else:
