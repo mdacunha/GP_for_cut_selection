@@ -826,6 +826,7 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
             efficacy = float(np.mean([bd[instance][rand_seed][0]['efficacy'] for rand_seed in rand_seeds]))
             int_support = float(np.mean([bd[instance][rand_seed][0]['int_support'] for rand_seed in rand_seeds]))
             obj_parallel = float(np.mean([bd[instance][rand_seed][0]['obj_parallelism'] for rand_seed in rand_seeds]))
+            status = bd[instance][rand_seeds[0]][0]['status']
             score = float(np.mean([scores[instance][rand_seed][0] for rand_seed in rand_seeds]))
             dual_bound = float(np.mean([dual_bounds[instance][rand_seed][0] for rand_seed in rand_seeds]))
             lp_iter = float(np.mean([lp_iters[instance][rand_seed][0] for rand_seed in rand_seeds]))
@@ -847,7 +848,7 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
                                     'gap': gap, 'num_lp_iterations': lp_iter, 'num_nodes': num_node,
                                     'num_cuts': num_cut, 'solution_fractionality': sol_frac, 'parameters': parameters,
                                     'improvement': score, 'solve_time': solve_time, 'standard_solve_time': standard_solve_time,
-                                    'batch_solve_time': batch_solve_time}}
+                                    'batch_solve_time': batch_solve_time, 'status': status}}
             if single_instance is None:
                 full_yaml_data[instance] = yaml_data[instance]
             else:
