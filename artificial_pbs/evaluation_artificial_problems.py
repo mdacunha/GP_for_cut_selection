@@ -20,7 +20,7 @@ def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic, tim
                       "GP_parsimony_parameter_1.2": {}, "GP_parsimony_parameter_1.4": {}, "gnn_bfs_nprimal=2": {},
                       "gnn_bfs_nprimal=100000": {}}
     else:
-        evaluation = {"SCIP": {}, "best_estimate_BFS": {}, "best_estimate_DFS": {}, "best_LB_BFS": {},
+        evaluation = {"SCIP": {}, "SCIP_limited": {}, "best_estimate_BFS": {}, "best_estimate_DFS": {}, "best_LB_BFS": {},
                       "GP_parsimony_parameter_1.2": {}, "GP_parsimony_parameter_1.4": {}}
     done = 0
     while is_ok is False:

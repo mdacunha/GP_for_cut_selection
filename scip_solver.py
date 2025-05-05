@@ -44,11 +44,12 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         num_cuts_per_round = 10
         constraint_handler = RepeatSepaConshdlr(model, num_rounds)
         model.includeConshdlr(constraint_handler, "RepeatSepa", "Forces a certain number of separation rounds",
-                             sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
-                             eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
-                             presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
-        cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
-        model.includeCutsel(cut_selector, "", "", 536870911)
+                                sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
+                                eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
+                                presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
+        if cut_comp != "SCIP" and cut_comp != "SCIP_limited":
+            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
+            model.includeCutsel(cut_selector, "", "", 536870911)
         model.setParam('separating/maxstallroundsroot', num_rounds)
         model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
 

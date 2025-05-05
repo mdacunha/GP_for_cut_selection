@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Parameters for GP_function training
     problem = "gisp"  # Problem type
-    training_folder = "train"
+    training_folder = "Train"
     initial_pop = 50  # Population size for tree-based heuristics
     mate = 0.9  # Crossover rate
     mutate = 0.1  # Mutation rate
@@ -146,12 +146,12 @@ if __name__ == "__main__":
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
     print(gp_function, flush=True)
     problem = "gisp"
-    partition= "test"
+    partition= "Test"
     evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder="outcomes")
 
     # Gather information from JSON files for the specified problems and partitions
-    dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["test"], saving_folder="outcomes")
+    dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["Test"], saving_folder="outcomes")
 
     # Display the output results
     just_get_the_output_results(dic_info)

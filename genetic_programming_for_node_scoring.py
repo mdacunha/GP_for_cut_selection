@@ -23,7 +23,7 @@ toolbox = base.Toolbox()
 
 def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
-            training_folder="train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 
+            training_folder="Train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 
             fixedcutsel=False, node_lim=-1, sol_path=None, transformed=False):
     tree_scores = {}
     if seed is None:
