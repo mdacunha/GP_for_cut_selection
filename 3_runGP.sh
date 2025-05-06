@@ -31,7 +31,7 @@ ARGUMENT1=$1
 ARGUMENT2=$2
 
 echo "run GP"
-python main.py "$ARGUMENT1" "$ARGUMENT2" None
+python main.py "$ARGUMENT1" "$ARGUMENT2" GNN_method/TransformedSolutions/
 
 echo "Fin du job à $(date)"
 
