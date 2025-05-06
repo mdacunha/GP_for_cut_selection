@@ -4,7 +4,7 @@
 #SBATCH -c 1
 #SBATCH --time=7-00:00:00
 #SBATCH -p batch
-##SBATCH --qos=long
+#SBATCH --qos=long
 #SBATCH --output=3_GNN.out
 #SBATCH --error=3_GNN.err
 
