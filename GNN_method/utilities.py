@@ -13,7 +13,7 @@ import parameters
 
 
 def build_scip_model(instance_path, node_lim, rand_seed, pre_solve, propagation, separators, heuristics,
-                     aggressive_sep, early_heuristics_only, dummy_branch_rule, time_limit=None, sol_path=None,
+                     aggressive_sep, dummy_branch_rule, early_heuristics_only=False, time_limit=None, sol_path=None,
                      dir_cut_off=0.0, efficacy=1.0, int_support=0.1, obj_parallelism=0.1):
     """
     General function to construct a PySCIPOpt model.

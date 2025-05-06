@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # Tournament parameters
     fitness_size = 5  # Number of individuals in the fitness tournament
     parsimony_size = 1.2  # Parameter for size-based tournament
-    time_limit = 0#180  # Time limit (not applicable for artificial problems)
+    time_limit = 180  # Time limit (not applicable for artificial problems)
     nb_of_instances = 0  # Number of instances (not applicable for artificial problems)
 
     # Environment parametrisation for SCIP solving

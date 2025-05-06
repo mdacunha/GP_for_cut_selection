@@ -48,8 +48,7 @@ def run_instance(temp_dir, instance_path, solution_path, instance, rand_seed, sa
 
     # Build the actual SCIP model from the information now
     scip = build_scip_model(instance_path, node_lim, rand_seed, False, propagation, True, heuristics, aggressive, 
-                            early_heuristics_only,
-                            dummy_branch, time_limit=time_limit, sol_path=solution_path,
+                            dummy_branch, early_heuristics_only=early_heuristics_only, time_limit=time_limit, sol_path=solution_path,
                             dir_cut_off=dir_cut_off, efficacy=efficacy, int_support=int_support,
                             obj_parallelism=obj_parallelism)
 
