@@ -22,12 +22,12 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
     model.hideOutput()
     optsol = None
     if fixedcutsel:
-        all_param_names = model.getParams()
+        """all_param_names = model.getParams()
 
         mask = 1 << SCIP_HEURTIMING.BEFOREPRESOL
         for pname in all_param_names:
             if pname.startswith("heuristics/") and pname.endswith("/timingmask"):
-                model.setParam(pname, mask)
+                model.setParam(pname, mask)"""
             
         model.setParam('limits/nodes', node_lim)
         model.setParam('presolving/maxrounds', 1)
