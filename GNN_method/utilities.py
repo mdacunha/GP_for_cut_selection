@@ -6,14 +6,14 @@ import subprocess
 import shutil
 import logging
 import argparse
-from pyscipopt import Model, quicksum, SCIP_RESULT, SCIP_PARAMSETTING, Branchrule, SCIP_PRESOLTIMING, SCIP_PROPTIMING
+from pyscipopt import Model, quicksum, SCIP_RESULT, SCIP_PARAMSETTING, Branchrule, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_HEURTIMING
 from ConstraintHandler.ConstraintHandler import RepeatSepaConshdlr
 from CutSelectors.FixedAmountCutsel import FixedAmountCutsel
 import parameters
 
 
 def build_scip_model(instance_path, node_lim, rand_seed, pre_solve, propagation, separators, heuristics,
-                     aggressive_sep, dummy_branch_rule, time_limit=None, sol_path=None,
+                     aggressive_sep, early_heuristics_only, dummy_branch_rule, time_limit=None, sol_path=None,
                      dir_cut_off=0.0, efficacy=1.0, int_support=0.1, obj_parallelism=0.1):
     """
     General function to construct a PySCIPOpt model.
@@ -47,6 +47,16 @@ def build_scip_model(instance_path, node_lim, rand_seed, pre_solve, propagation,
     scip = Model()
     scip.setParam('limits/nodes', node_lim)
     scip.setParam('randomization/randomseedshift', rand_seed)
+
+    if early_heuristics_only:
+
+        all_param_names = scip.getParams()
+
+        mask = 1 << SCIP_HEURTIMING.BEFOREPRESOL
+        for pname in all_param_names:
+            if pname.startswith("heuristics/") and pname.endswith("/timingmask"):
+                scip.setParam(pname, mask)
+    
     if not pre_solve:
         # Printing the transformed MPS files keeps the fixed variables and this drastically changes the solve
         # functionality after reading in the model and re-solving. So set one round of pre-solve to remove these

@@ -156,33 +156,28 @@ class CustomCutSelector(Cutsel):
         
         #getDualboundRoot = self.model.getDualboundRoot()
         getNVars = self.model.getNVars()
-        sol = self.model.getBestSol()
+        sol = self.model.getBestSol() #if self.model.getNSols() > 0 else None
         getNConss = self.model.getNConss()
 
         # Cycle over all cuts and score them
         for i in range(len(cuts)):
 
-            if self.comp_policy == 'estimate':
-                score = 1 / (self.model.getCutEfficacy(cuts[i])+1e-10)
-            else:                
-                #delimiters = ["(", ",", " ", ")"]
-                #string = self.comp_policy
-                context = {
-                        'getDepth': self.model.getDepth(),
-                        #'getEstimate': getEstimate,
-                        #'getLowerbound': getLowerbound,
-                        #'getDualboundRoot': getDualboundRoot,
-                        'getNConss': getNConss,
-                        'getNVars': getNVars,
-                        'getNNonz': cuts[i].getNNonz(),
-                        'getCutEfficacy': self.model.getCutEfficacy(cuts[i]),
-                        'getCutLPSolCutoffDistance': self.model.getCutLPSolCutoffDistance(cuts[i], sol),
-                        'getRowNumIntCols': self.model.getRowNumIntCols(cuts[i]),
-                        'getRowObjParallelism': self.model.getRowObjParallelism(cuts[i]),
-                        "10000000":10000000
-                    }
+            context = {
+                    'getDepth': self.model.getDepth(),
+                    #'getEstimate': getEstimate,
+                    #'getLowerbound': getLowerbound,
+                    #'getDualboundRoot': getDualboundRoot,
+                    'getNConss': getNConss,
+                    'getNVars': getNVars,
+                    'getNNonz': cuts[i].getNNonz(),
+                    'getCutEfficacy': self.model.getCutEfficacy(cuts[i]),
+                    'getCutLPSolCutoffDistance': self.model.getCutLPSolCutoffDistance(cuts[i], sol), #if sol is not None else None,
+                    'getRowNumIntCols': self.model.getRowNumIntCols(cuts[i]),
+                    'getRowObjParallelism': self.model.getRowObjParallelism(cuts[i]),
+                    "10000000":10000000
+                }
                 
-                score = evaluate_expression(self.comp_policy, context)
+            score = evaluate_expression(self.comp_policy, context)
 
             score += 1e-4 if cuts[i].isInGlobalCutpool() else 0
             score += random.uniform(0, 1e-6)

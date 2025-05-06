@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "GNN_method"))
 
 import pyscipopt
-from pyscipopt import Model, quicksum, Nodesel, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_PARAMSETTING
+from pyscipopt import Model, quicksum, Nodesel, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_PARAMSETTING, SCIP_HEURTIMING
 import statistics
 from operator import *
 import argparse
@@ -16,20 +16,26 @@ from conf import *
 from cut_selection_policies import CustomCutSelector
 from constraintHandler_GP import RepeatSepaConshdlr
 
-
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None):
     model = Model()
     model.hideOutput()
     optsol = None
-    if not fixedcutsel:
+    if fixedcutsel:
+        all_param_names = model.getParams()
+
+        mask = 1 << SCIP_HEURTIMING.BEFOREPRESOL
+        for pname in all_param_names:
+            if pname.startswith("heuristics/") and pname.endswith("/timingmask"):
+                model.setParam(pname, mask)
+            
         model.setParam('limits/nodes', node_lim)
         model.setParam('presolving/maxrounds', 1)
         model.setParam('estimation/restarts/restartlimit', 0)
         model.setParam('estimation/restarts/restartpolicy', 'n')
         model.setParam('presolving/maxrestarts', 0)
-        model.disablePropagation()        
-    if not parameter_settings:
+        model.disablePropagation()
+    if parameter_settings:
         model.setParam('constraints/linear/upgrade/logicor', 0)
         model.setParam('constraints/linear/upgrade/indicator', 0)
         model.setParam('constraints/linear/upgrade/knapsack', 0)
@@ -52,13 +58,15 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         model.setParam('separating/maxstallroundsroot', num_rounds)
         model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
 
-    if not fixedcutsel:
-        model.setHeuristics(SCIP_PARAMSETTING.OFF)
+    if fixedcutsel:
+        #model.setHeuristics(SCIP_PARAMSETTING.OFF)
         model.setParam('branching/leastinf/priority', 10000000)
 
     if time_limit != 0:
         model.setRealParam("limits/time", time_limit)
         
+    model.setParam('misc/usesymmetry', 0)
+    
     model.readProblem(instance_path)
     
     if sol_path != "None" and sol_path is not None:
