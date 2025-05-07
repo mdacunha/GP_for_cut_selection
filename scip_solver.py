@@ -70,7 +70,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
     model.readProblem(instance_path)
     
     if sol_path != "None" and sol_path is not None:
-        real_sol_path = get_filename(sol_path, instance_path.split("/")[-1].split(".mps")[0], 1, trans=True, root=False, sample_i=None, ext='sol')
+        real_sol_path = get_filename(sol_path, instance_path.split("/")[-1].split("__trans")[0], 1, trans=True, root=False, sample_i=None, ext='sol')
         assert os.path.isfile(real_sol_path) and '.sol' in real_sol_path, 'Sol is {}'.format(real_sol_path)
         sol = model.readSolFile(real_sol_path)
         model.addSol(sol)
