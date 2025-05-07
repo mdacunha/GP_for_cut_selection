@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # Tournament parameters
     fitness_size = 5  # Number of individuals in the fitness tournament
     parsimony_size = 1.2  # Parameter for size-based tournament
-    time_limit = 180  # Time limit (not applicable for artificial problems)
+    time_limit = int(1e8)  # Time limit (not applicable for artificial problems)
     nb_of_instances = 0  # Number of instances (not applicable for artificial problems)
 
     # Environment parametrisation for SCIP solving
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     transformed = True  # Whether to use the transformed version of the problem for comparison with GNN
     
     """########### SMALL PARAM FOR TESTING ###########
-    n_test_instances=1
+    n_test_instances=4
     initial_pop=5
     nb_of_gen=2
     seed=1

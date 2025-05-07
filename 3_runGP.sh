@@ -2,9 +2,9 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=16
 #SBATCH -c 1
-#SBATCH --time=2-00:00:00
+#SBATCH --time=9-00:00:00
 #SBATCH -p batch
-##SBATCH --qos=long
+#SBATCH --qos=long
 #SBATCH --output=3_GP.out
 #SBATCH --error=3_GP.err
 
