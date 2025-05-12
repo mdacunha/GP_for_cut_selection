@@ -412,7 +412,7 @@ def submit_slurm_jobs(instance_dir, solution_dir, temp_dir, outfile_dir, num_sam
                                           job_name='{}--{}--{}'.format(instance, rand_seed, sample_i),
                                           outfile=os.path.join(outfile_dir, '%j__{}__{}__{}.out'.format(
                                               instance, rand_seed, sample_i)),
-                                          time_limit=180,
+                                          time_limit=10,
                                           arg_list=[temp_dir,
                                                     get_filename(instance_dir, instance, rand_seed, trans=True,
                                                                  root=False, sample_i=None, ext='mps'),

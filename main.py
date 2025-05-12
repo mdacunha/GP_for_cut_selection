@@ -15,7 +15,11 @@ if __name__ == "__main__":
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
-    n_test_instances = 60  # Number of test instances, increased by 10 in case they are failures in the evaluation through all the baselines
+    dossier = os.path.join(conf.ROOT_DIR, "GNN_method", "TransformedInstances")
+    contenu = os.listdir(dossier)
+    fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
+
+    n_test_instances = len(fichiers)  # Number of test instances, increased by 10 in case they are failures in the evaluation through all the baselines
 
     # Parameters for GP_function training
     problem = "gisp"  # Problem type

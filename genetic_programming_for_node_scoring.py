@@ -60,27 +60,27 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
 
     def evaluate(scoring_function):
         tree_str = str(scoring_function)
-
+        print(tree_str, flush=True)
+        
         # Vérifier si l'arbre existe déjà dans le dictionnaire
         if tree_str in tree_scores:
-            return tree_scores[tree_str],
+            pass
+        else:
+            python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
+            result = subprocess.run(
+                ['python', python_path, str(scoring_function), problem, training_folder, node_select, str(time_limit),
+                str(seed), str(nb_of_instances), str(fixedcutsel), str(node_lim), sol_path, str(transformed)],
+                capture_output=True, text=True)
+            mean_solving_time_or_gap = result.stdout
 
-        print(tree_str, flush=True)
-
-        python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
-        result = subprocess.run(
-            ['python', python_path, str(scoring_function), problem, training_folder, node_select, str(time_limit),
-             str(seed), str(nb_of_instances), str(fixedcutsel), str(node_lim), sol_path, str(transformed)],
-            capture_output=True, text=True)
-        mean_solving_time_or_gap = result.stdout
-
-        print("mean solving time or gap: ", mean_solving_time_or_gap, flush=True)
-        if mean_solving_time_or_gap == "" or mean_solving_time_or_gap == "nan":
-            print("error: ", result.stderr)
-            return 10e20,
-        mean_solving_time_or_gap = mean_solving_time_or_gap.replace("\n", "")
-        mean_solving_time_or_gap = float(mean_solving_time_or_gap)
-        return mean_solving_time_or_gap,  # mean_val
+            print("mean solving time or gap: ", mean_solving_time_or_gap, flush=True)
+            if mean_solving_time_or_gap == "" or mean_solving_time_or_gap == "nan":
+                print("error: ", result.stderr)
+                return 10e20,
+            mean_solving_time_or_gap = mean_solving_time_or_gap.replace("\n", "")
+            mean_solving_time_or_gap = float(mean_solving_time_or_gap)
+            tree_scores[tree_str] = mean_solving_time_or_gap
+        return tree_scores[tree_str],  # mean_val
 
     toolbox.register("evaluate", evaluate)
     toolbox.register("select", tools.selDoubleTournament, fitness_size=fitness_size, parsimony_size=parsimony_size,

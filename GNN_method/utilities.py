@@ -466,6 +466,7 @@ def run_python_slurm_job(python_file, job_name, outfile, time_limit, arg_list, d
         # We don't run exclusive always as we want more throughput. The run is still deterministic, but time can vary
         cmd_2 = ['--cpus-per-task={}'.format(num_cpus)]
         # If you wanted to add memory limits; '--mem={}'.format(mem), where mem is in MB, e.g. 8000=8GB
+        cmd_2 += ['--mem=8G']
     if dependencies is not None and len(dependencies) > 0:
         # Add the dependencies if they exist
         dependency_str = ''.join([str(dependency) + ':' for dependency in dependencies])[:-1]

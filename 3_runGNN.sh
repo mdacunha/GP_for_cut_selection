@@ -5,7 +5,7 @@
 #SBATCH --time=12-00:00:00
 #SBATCH -p batch
 #SBATCH --qos=long
-#SBATCH --mem=0
+##SBATCH --mem=0
 #SBATCH --output=3_GNN.out
 #SBATCH --error=3_GNN.err
 
