@@ -59,7 +59,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
 
     if fixedcutsel:
-        #model.setHeuristics(SCIP_PARAMSETTING.OFF)
+        model.setHeuristics(SCIP_PARAMSETTING.OFF)
         model.setParam('branching/leastinf/priority', 10000000)
 
     if time_limit != 0:

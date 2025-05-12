@@ -41,7 +41,7 @@ def run_instance(temp_dir, instance_path, solution_path, instance, rand_seed, sa
     time_limit = None if time_limit < 0 else time_limit
     node_lim = 1 if root else -1
     propagation = False if fixed_cutsel else True
-    heuristics = True if fixed_cutsel else True
+    heuristics = False if fixed_cutsel else True
     aggressive = True if fixed_cutsel else False
     #early_heuristics_only = True if fixed_cutsel else False
     dummy_branch = True if root else False

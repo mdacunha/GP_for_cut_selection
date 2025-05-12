@@ -19,8 +19,8 @@ if __name__ == "__main__":
     contenu = os.listdir(dossier)
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
 
-    n_test_instances = len(fichiers)  # Number of test instances, increased by 10 in case they are failures in the evaluation through all the baselines
-
+    n_test_instances = len(fichiers)  
+    
     # Parameters for GP_function training
     problem = "gisp"  # Problem type
     training_folder = "Train"
