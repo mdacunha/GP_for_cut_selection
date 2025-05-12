@@ -54,8 +54,8 @@ if __name__ == "__main__":
     nb_of_instances = 0  # Number of instances (not applicable for artificial problems)
 
     # Environment parametrisation for SCIP solving
-    fixedcutsel = True
-    transformed = True  # Whether to use the transformed version of the problem for comparison with GNN
+    GNN_comp = True
+    GNN_transformed = True  # Whether to use the transformed version of the problem for comparison with GNN
     
     """########### SMALL PARAM FOR TESTING ###########
     n_test_instances=4
@@ -84,10 +84,10 @@ if __name__ == "__main__":
         parsimony_size=parsimony_size,
         time_limit=time_limit,
         nb_of_instances=nb_of_instances,
-        fixedcutsel=fixedcutsel,
+        fixedcutsel=GNN_comp,
         node_lim=node_lim,
         sol_path=sol_path,
-        transformed=transformed
+        transformed=GNN_transformed
     )
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
@@ -105,7 +105,8 @@ if __name__ == "__main__":
     problem = "gisp"
     partition= "Test"
     evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
-                                                   fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder="outcomes")
+                                                   fixedcutsel=GNN_comp, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
+                                                   build_set_of_instances=False,saving_folder="outcomes")
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["Test"], saving_folder="outcomes")
