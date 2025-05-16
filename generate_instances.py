@@ -6,15 +6,15 @@ from data.build_gisp_instances import *
 if __name__ == "__main__":
     # Note: The construction of the instance reuses the code by Labassi et al. on Graph Neural Networks.
     # Parameters for instance generation
-    n = 100  # Number of training instances
+    n = 50  # Number of training instances
     n_test = 60  # Number of test instances
     whichSet = 'SET2'  # Set identifier, must be set to 'SET2'
     setparam = 100  # Parameter related to "revenues"
     alphaE2 = 0.5  # Probability of building an edge
 
     # Graph parameters for GISP problem representation
-    min_n = 60  # Minimum number of nodes in the graph
-    max_n = 70  # Maximum number of nodes in the graph
+    min_n = 120  # Minimum number of nodes in the graph
+    max_n = 140  # Maximum number of nodes in the graph
     er_prob = 0.6  # Erdos-Rényi random graph parameter
 
     """########### SMALL PARAM FOR TESTING ###########

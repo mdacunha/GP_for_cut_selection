@@ -18,88 +18,68 @@ import time
 from conf import *
 from scip_solver import perform_SCIP_instance, perform_SCIP_instances_using_a_tuned_comp_policy
 
-toolbox = base.Toolbox()
+#toolbox = base.Toolbox() ??
 
 
 def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
             training_folder="Train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 
-            fixedcutsel=False, node_lim=-1, sol_path=None, transformed=False):
+            fixedcutsel=False, semantic_algo=False, node_lim=-1, sol_path=None, transformed=False):
     tree_scores = {}
     if seed is None:
         seed = math.floor(random.random() * 10000)
     print("seed:", seed)
     random.seed(seed)
 
-    pset = gp.PrimitiveSet("main", 8)
-    pset.addPrimitive(add, 2)
-    pset.addPrimitive(sub, 2)
+    if not semantic_algo:
+        pset = gp.PrimitiveSet("main", 8)
+        pset.addPrimitive(add, 2)
+        pset.addPrimitive(sub, 2)
 
-    pset.addPrimitive(mul, 2)
-    pset.addPrimitive(protectedDiv, 2)
+        pset.addPrimitive(mul, 2)
+        pset.addPrimitive(protectedDiv, 2)
 
-    pset.renameArguments(ARG0="getDepth")
-    pset.renameArguments(ARG1="getNConss")
-    pset.renameArguments(ARG2="getNVars")
-    pset.renameArguments(ARG3="getNNonz")
-    pset.renameArguments(ARG4="getCutEfficacy")
-    pset.renameArguments(ARG5="getCutLPSolCutoffDistance")
-    pset.renameArguments(ARG6="getRowNumIntCols")
-    pset.renameArguments(ARG7="getRowObjParallelism")
-    pset.addTerminal(10000000)
+        pset.renameArguments(ARG0="getDepth")
+        pset.renameArguments(ARG1="getNConss")
+        pset.renameArguments(ARG2="getNVars")
+        pset.renameArguments(ARG3="getNNonz")
+        pset.renameArguments(ARG4="getCutEfficacy")
+        pset.renameArguments(ARG5="getCutLPSolCutoffDistance")
+        pset.renameArguments(ARG6="getRowNumIntCols")
+        pset.renameArguments(ARG7="getRowObjParallelism")
+        pset.addTerminal(10000000)
 
-    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-    creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin,
-                   pset=pset)
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin,
+                    pset=pset)
 
-    toolbox = base.Toolbox()
-    toolbox.register("expr", gp.genGrow, pset=pset, min_=1, max_=17)
-    toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
-    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("compile", gp.compile, pset=pset)
+        toolbox = base.Toolbox()
+        toolbox.register("expr", gp.genGrow, pset=pset, min_=1, max_=17)
+        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("compile", gp.compile, pset=pset)
 
-    def evaluate(scoring_function):
-        tree_str = str(scoring_function)
-        print(tree_str, flush=True)
+        toolbox.register("evaluate", evaluate)
+        toolbox.register("select", tools.selDoubleTournament, fitness_size=fitness_size, parsimony_size=parsimony_size,
+                        fitness_first=True)
+        toolbox.register("mate", gp.cxOnePoint)
+
+        toolbox.register("expr_mut", gp.genGrow, min_=1, max_=5)
+        toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+
+        pop = toolbox.population(n=initial_pop)
+        hof = tools.HallOfFame(1)
+        stats = tools.Statistics(lambda ind: ind.fitness.values)
+        stats.register("avg", numpy.mean)
+        stats.register("std", numpy.std)
+        stats.register("min", numpy.min)
+        stats.register("max", numpy.max)
+
+        pop, logbook = algorithms.eaSimple(pop, toolbox, mate, mutate, nb_of_gen, stats,
+                                        halloffame=hof)  # cxpb=mate, mutpb=mutate,ngen= nb of generation
         
-        # Vérifier si l'arbre existe déjà dans le dictionnaire
-        if tree_str in tree_scores:
-            pass
-        else:
-            python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
-            result = subprocess.run(
-                ['python', python_path, str(scoring_function), problem, training_folder, node_select, str(time_limit),
-                str(seed), str(nb_of_instances), str(fixedcutsel), str(node_lim), sol_path, str(transformed)],
-                capture_output=True, text=True)
-            mean_solving_time_or_gap = result.stdout
-
-            print("mean solving time or gap: ", mean_solving_time_or_gap, flush=True)
-            if mean_solving_time_or_gap == "" or mean_solving_time_or_gap == "nan":
-                print("error: ", result.stderr)
-                return 10e20,
-            mean_solving_time_or_gap = mean_solving_time_or_gap.replace("\n", "")
-            mean_solving_time_or_gap = float(mean_solving_time_or_gap)
-            tree_scores[tree_str] = mean_solving_time_or_gap
-        return tree_scores[tree_str],  # mean_val
-
-    toolbox.register("evaluate", evaluate)
-    toolbox.register("select", tools.selDoubleTournament, fitness_size=fitness_size, parsimony_size=parsimony_size,
-                     fitness_first=True)
-    toolbox.register("mate", gp.cxOnePoint)
-
-    toolbox.register("expr_mut", gp.genGrow, min_=1, max_=5)
-    toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
-
-    pop = toolbox.population(n=initial_pop)
-    hof = tools.HallOfFame(1)
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("avg", numpy.mean)
-    stats.register("std", numpy.std)
-    stats.register("min", numpy.min)
-    stats.register("max", numpy.max)
-
-    pop, logbook = algorithms.eaSimple(pop, toolbox, mate, mutate, nb_of_gen, stats,
-                                       halloffame=hof)  # cxpb=mate, mutpb=mutate,ngen= nb of generation
+    elif semantic_algo:
+        pass #TODO
 
     print(pop, logbook, stats, hof)
     for elt in hof:
@@ -117,6 +97,29 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             json.dump([logbook, [str(elt) for elt in hof]], outfile)
 
 
+    def evaluate(scoring_function):
+            tree_str = str(scoring_function)
+            print(tree_str, flush=True)
+            
+            # Vérifier si l'arbre existe déjà dans le dictionnaire
+            if tree_str in tree_scores:
+                pass
+            else:
+                python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
+                result = subprocess.run(
+                    ['python', python_path, str(scoring_function), problem, training_folder, node_select, str(time_limit),
+                    str(seed), str(nb_of_instances), str(fixedcutsel), str(node_lim), sol_path, str(transformed)],
+                    capture_output=True, text=True)
+                mean_solving_time_or_gap = result.stdout
+
+                print("mean solving time or gap: ", mean_solving_time_or_gap, flush=True)
+                if mean_solving_time_or_gap == "" or mean_solving_time_or_gap == "nan":
+                    print("error: ", result.stderr)
+                    return 10e20,
+                mean_solving_time_or_gap = mean_solving_time_or_gap.replace("\n", "")
+                mean_solving_time_or_gap = float(mean_solving_time_or_gap)
+                tree_scores[tree_str] = mean_solving_time_or_gap
+            return tree_scores[tree_str],  # mean_val
 
 if __name__ == "__main__":
     t_1 = time.time()

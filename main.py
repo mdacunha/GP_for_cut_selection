@@ -11,11 +11,10 @@ from artificial_pbs.build_tables_artificial_pb_perfs import *
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('seed', type=str, help="Seed that we choose")
-    parser.add_argument('node_lim', type=str, help="Node limit for the GP function")
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
-    dossier = os.path.join(conf.ROOT_DIR, "GNN_method", "TransformedInstances")
+    dossier = os.path.join(conf.ROOT_DIR, "GNN_method", "TransformedInstances", "Test")
     contenu = os.listdir(dossier)
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
 
@@ -29,14 +28,7 @@ if __name__ == "__main__":
     mutate = 0.1  # Mutation rate
     nb_of_gen = 15  # Number of generations
     seed = args.seed  # Random seed
-    node_lim = args.node_lim
     sol_path = args.sol_path  # Path to the solution file
-
-    try:
-        seed = int(seed)
-        node_lim = int(node_lim)
-    except ValueError:
-        print("L'argument ne peut pas être converti en entier.")
 
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
     saving_folder = os.path.join(conf.ROOT_DIR, "outcomes/GP_function")
@@ -54,8 +46,16 @@ if __name__ == "__main__":
     nb_of_instances = 0  # Number of instances (not applicable for artificial problems)
 
     # Environment parametrisation for SCIP solving
-    GNN_comp = True
+    #Basic_algo = False
+    GNN_comparison = True
+    semantic_algo = False
+
     GNN_transformed = True  # Whether to use the transformed version of the problem for comparison with GNN
+
+    if GNN_comparison:
+        node_lim = 1  # Node limit for GNN comparison
+    else:
+        node_lim = -1
     
     """########### SMALL PARAM FOR TESTING ###########
     n_test_instances=4
@@ -84,7 +84,8 @@ if __name__ == "__main__":
         parsimony_size=parsimony_size,
         time_limit=time_limit,
         nb_of_instances=nb_of_instances,
-        fixedcutsel=GNN_comp,
+        fixedcutsel=GNN_comparison,
+        semantic_algo=semantic_algo,
         node_lim=node_lim,
         sol_path=sol_path,
         transformed=GNN_transformed
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     problem = "gisp"
     partition= "Test"
     evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
-                                                   fixedcutsel=GNN_comp, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
+                                                   fixedcutsel=GNN_comparison, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
                                                    build_set_of_instances=False,saving_folder="outcomes")
 
     # Gather information from JSON files for the specified problems and partitions
