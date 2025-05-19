@@ -28,7 +28,7 @@ directory_path="Tensorboard/"
 mkdir -p "$directory_path"
 
 echo "training neural network"
-python Slurm/train_neural_network.py TransformedInstances/Train/ TransformedInstances/Test/ TransformedSolutions/ Features RootResults/ ResultsGCNN/ Tensorboard/ TempFiles/GNN/ None Outfiles/ 250 0.1 20 667 False
+python Slurm/train_neural_network.py TransformedInstances/Train/ TransformedInstances/Test/ TransformedSolutions/ Features RootResults/ ResultsGCNN/ Tensorboard/ TempFiles/GNN/ None Outfiles/ 180 0.1 20 667 False
 
 echo "Evaluating trained network"
 python Slurm/evaluate_trained_network.py TransformedInstances/Test TransformedSolutions Features/ RootResults/ ResultsGCNN/ Tensorboard/ TempFiles/GNN/ ResultsGCNN/actor.pt Outfiles True 

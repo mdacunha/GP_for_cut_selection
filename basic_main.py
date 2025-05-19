@@ -93,7 +93,7 @@ if __name__ == "__main__":
     )
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
-    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes")
+    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes_basic")
     function_folder = os.path.join(simulation_folder, "GP_function")
     problem_folder = os.path.join(simulation_folder, problem)
     os.makedirs(function_folder, exist_ok=True)  # Create the problem folder if it doesn't exist
@@ -107,10 +107,10 @@ if __name__ == "__main__":
     problem = "gisp"
     evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
                                                    fixedcutsel=GNN_comparison, GNN_transformed=GNN_transformed, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
-                                                   build_set_of_instances=False,saving_folder="outcomes")
+                                                   build_set_of_instances=False,saving_folder=simulation_folder)
 
     # Gather information from JSON files for the specified problems and partitions
-    dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["test"], saving_folder="outcomes")
+    dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["test"], saving_folder=simulation_folder)
 
     # Display the output results
     just_get_the_output_results(dic_info)

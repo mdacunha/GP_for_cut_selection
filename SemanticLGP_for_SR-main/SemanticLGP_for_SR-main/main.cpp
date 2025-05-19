@@ -31,7 +31,7 @@ int main(int argc, char*argv[]) {
 				norm_flag = false;
 			}
 
-			readTrainData(run, job);
+			//readTrainData(run, job);
 			SF.independentRunInit(run, job);
 			double suc = 0, suc_R2 = 0, eva_times = 0, train_err = 1e6, test_err = 1e6, test_R2 = 0, prog_size = 0, time = 0;
 
@@ -46,7 +46,7 @@ int main(int argc, char*argv[]) {
 			end = clock();
 			dfTraTime = (double)(end - start) / CLOCKS_PER_SEC;
 
-			if (pop.bestPro.fitness < 1e-4) {
+			if (pop.bestPro.fitness < 1e-2) {
 				suc = 1;
 			}
 			eva_times = evaluation;

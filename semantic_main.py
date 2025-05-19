@@ -58,14 +58,14 @@ if __name__ == "__main__":
     else:
         node_lim = -1
     
-    """########### SMALL PARAM FOR TESTING ###########
+    ########### SMALL PARAM FOR TESTING ###########
     n_test_instances=4
     initial_pop=5
     nb_of_gen=2
     seed=1
     node_lim=1
     fitness_size=2
-    ############ SMALL PARAM FOR TESTING ###########"""
+    ############ SMALL PARAM FOR TESTING ###########
 
     # Construct a unique name for the run
     name = f"{problem}_pop_{initial_pop}_nb_gen{nb_of_gen}_seed_{seed}"
@@ -78,9 +78,6 @@ if __name__ == "__main__":
     # Définir les types d'arguments et de retour
     mylib.add.argtypes = [ctypes.c_int, ctypes.c_int]
     mylib.add.restype = ctypes.c_int
-
-    # Appel
-    print(mylib.add(3, 4))  # => 7
 
     ## gcc -shared -o f.dll -fPIC hello.cpp  
 
