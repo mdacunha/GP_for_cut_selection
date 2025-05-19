@@ -59,6 +59,30 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         toolbox.register("compile", gp.compile, pset=pset)
 
+        def evaluate(scoring_function):
+            tree_str = str(scoring_function)
+            print(tree_str, flush=True)
+            
+            # Vérifier si l'arbre existe déjà dans le dictionnaire
+            if tree_str in tree_scores:
+                pass
+            else:
+                python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
+                result = subprocess.run(
+                    ['python', python_path, str(scoring_function), problem, training_folder, node_select, str(time_limit),
+                    str(seed), str(nb_of_instances), str(int(fixedcutsel)), str(node_lim), sol_path, str(int(transformed))],
+                    capture_output=True, text=True)
+                mean_solving_time_or_gap = result.stdout
+
+                print("mean solving time or gap: ", mean_solving_time_or_gap, flush=True)
+                if mean_solving_time_or_gap == "" or mean_solving_time_or_gap == "nan":
+                    print("error: ", result.stderr)
+                    return 10e20,
+                mean_solving_time_or_gap = mean_solving_time_or_gap.replace("\n", "")
+                mean_solving_time_or_gap = float(mean_solving_time_or_gap)
+                tree_scores[tree_str] = mean_solving_time_or_gap
+            return tree_scores[tree_str],  # mean_val
+    
         toolbox.register("evaluate", evaluate)
         toolbox.register("select", tools.selDoubleTournament, fitness_size=fitness_size, parsimony_size=parsimony_size,
                         fitness_first=True)
@@ -95,31 +119,6 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
                 saving_folder +'/'+ name + ".json",
                 "w+") as outfile:
             json.dump([logbook, [str(elt) for elt in hof]], outfile)
-
-
-    def evaluate(scoring_function):
-            tree_str = str(scoring_function)
-            print(tree_str, flush=True)
-            
-            # Vérifier si l'arbre existe déjà dans le dictionnaire
-            if tree_str in tree_scores:
-                pass
-            else:
-                python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
-                result = subprocess.run(
-                    ['python', python_path, str(scoring_function), problem, training_folder, node_select, str(time_limit),
-                    str(seed), str(nb_of_instances), str(fixedcutsel), str(node_lim), sol_path, str(transformed)],
-                    capture_output=True, text=True)
-                mean_solving_time_or_gap = result.stdout
-
-                print("mean solving time or gap: ", mean_solving_time_or_gap, flush=True)
-                if mean_solving_time_or_gap == "" or mean_solving_time_or_gap == "nan":
-                    print("error: ", result.stderr)
-                    return 10e20,
-                mean_solving_time_or_gap = mean_solving_time_or_gap.replace("\n", "")
-                mean_solving_time_or_gap = float(mean_solving_time_or_gap)
-                tree_scores[tree_str] = mean_solving_time_or_gap
-            return tree_scores[tree_str],  # mean_val
 
 if __name__ == "__main__":
     t_1 = time.time()

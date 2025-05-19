@@ -11,7 +11,7 @@ import data.build_instances
 
 
 def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic, time_limit=None, 
-                                                   fixedcutsel=False, node_lim=-1, sol_path=None, do_gnn=True,build_set_of_instances=True,saving_folder="simulation_outcomes"):
+                                                   fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, do_gnn=True,build_set_of_instances=True,saving_folder="simulation_outcomes"):
     nb_of_built_instances = 100
     json_gp_func_dic = json.dumps(gp_func_dic)
     is_ok = False
@@ -36,7 +36,11 @@ def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic, tim
                 ''
             data.build_instances.build_new_set_of_instances(problem, partition, nb_of_instances=nb_of_built_instances)
 
-        path = os.path.join(conf.ROOT_DIR, f"GNN_method/TransformedInstances/{partition}")
+        if GNN_transformed:
+            path = os.path.join(conf.ROOT_DIR, f"GNN_method/TransformedInstances/{partition}")
+        else:
+            path = os.path.join(conf.ROOT_DIR, f"data/{problem}/{partition}")
+            
         for instance in os.listdir(path):
             is_ok = True
             # solving GNN
@@ -58,7 +62,8 @@ def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic, tim
             GP_and_SCIP = os.path.join(conf.ROOT_DIR, "artificial_pbs/subprocess_evaluation_gp_SCIPbaseline.py")
             result = subprocess.run(
                 ['python', GP_and_SCIP, problem, partition, json_gp_func_dic, str(time_limit), 
-                                                   str(fixedcutsel), str(node_lim), sol_path, instance, saving_folder],
+                                                   str(int(fixedcutsel)), str(int(GNN_transformed)), str(node_lim), 
+                                                   sol_path, instance, saving_folder],
                 capture_output=True, text=True)
             print("result for", partition, "GP_function and SCIP : ", result.stdout)
 

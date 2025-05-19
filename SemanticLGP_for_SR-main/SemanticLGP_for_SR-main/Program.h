@@ -16,6 +16,9 @@ public:
 
 	Program();
 	~Program();
+
+	double call_python_script_with_args(const std::vector<string>& args);
+	
 	void ini_program();
 	void ini_semcon();
 	void get_name();
@@ -112,10 +115,22 @@ double Program::get_train_fitness() {
 	fitness = 0;
 	for (int i = 0; i < input_num; i++) {
 		for (int j = 0; j < out_dimen; j++) {
-			fitness += pow(min((train_output[i*MaxDataDim + j]*out_stdu + out_mean) - (actual_output[i*outDataDim + j]*out_stdu + out_mean), 1e4), 2);
+			std::vector<std::string> py_args = {
+												"cutpolicyX", "gisp", "trainfolder1", "best_node",
+												"60",  // time_limit
+												"42",  // seed
+												"10",  // nb_of_instances
+												"1",   // fixedcutsel
+												"1000",// node_lim
+												"/path/to/sol", // sol_path
+												"0"    // transformed
+			};
+
+    		double fitness = call_python_script_with_args(py_args);
+			//fitness += pow(min((train_output[i*MaxDataDim + j]*out_stdu + out_mean) - (actual_output[i*outDataDim + j]*out_stdu + out_mean), 1e4), 2);
 		}
 	}
-	fitness = sqrt(fitness / input_num);
+	//fitness = sqrt(fitness / input_num);
 	return fitness;
 }
 

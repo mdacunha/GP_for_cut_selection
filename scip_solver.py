@@ -16,8 +16,10 @@ from conf import *
 from cut_selection_policies import CustomCutSelector
 from constraintHandler_GP import RepeatSepaConshdlr
 
+from GNN_method.Slurm.train_neural_network import get_standard_solve_data
+
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
-                          time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None):
+                          time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, Test=False):
     model = Model()
     model.hideOutput()
     optsol = None
@@ -48,15 +50,17 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         # Create a dummy constraint handler that forces the num_rounds amount of separation rounds
         num_rounds = 50
         num_cuts_per_round = 10
-        constraint_handler = RepeatSepaConshdlr(model, num_rounds)
-        model.includeConshdlr(constraint_handler, "RepeatSepa", "Forces a certain number of separation rounds",
-                                sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
-                                eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
-                                presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
+        if fixedcutsel:
+            constraint_handler = RepeatSepaConshdlr(model, num_rounds)
+            model.includeConshdlr(constraint_handler, "RepeatSepa", "Forces a certain number of separation rounds",
+                                    sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
+                                    eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
+                                    presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
         cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
         model.includeCutsel(cut_selector, "", "", 536870911)
-        model.setParam('separating/maxstallroundsroot', num_rounds)
-        model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
+        if fixedcutsel:
+            model.setParam('separating/maxstallroundsroot', num_rounds)
+            model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
 
     if fixedcutsel:
         model.setHeuristics(SCIP_PARAMSETTING.OFF)
@@ -64,8 +68,6 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
 
     if time_limit != 0:
         model.setRealParam("limits/time", time_limit)
-        
-    model.setParam('misc/usesymmetry', 0)
     
     model.readProblem(instance_path)
     
@@ -74,14 +76,16 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         assert os.path.isfile(real_sol_path) and '.sol' in real_sol_path, 'Sol is {}'.format(real_sol_path)
         sol = model.readSolFile(real_sol_path)
         model.addSol(sol)
-    
-    """if model.getObjectiveSense() == 'maximize':
-        obj_offset = model.getObjoffset()
-        model.setObjective(-1 * model.getObjective(), sense='minimize', clear='true')
-        model.addObjoffset(-1 * obj_offset)"""
 
     model.optimize()
     if time_limit != 0:
+        if fixedcutsel and Test:
+            score = 0
+            standard_solve_data = get_standard_solve_data("RootResults/", root=True)
+            sd = standard_solve_data[instance_path][1]
+            bd = model.getGap()
+            score = (sd["gap"] - bd["gap"]) / (abs(sd["gap"]) + 1e-8)
+            return model.getNNodes(), score
         return model.getNNodes(), model.getGap()
     return model.getNNodes(), model.getSolvingTime()
 

@@ -138,8 +138,9 @@ def train_network(instance_dir, test_instance_dir, solution_dir, feature_dir, de
                                                                                         signal_file)
 
             # Generate scores based on solve_information
-            (scores, gaps, dual_bounds, primal_bounds, lp_iterations, n_nodes, n_cuts, sol_times, standard_solve_time_scores, 
-             batch_solve_time_scores, sol_fracs, primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
+            (scores, gaps, standard_gap_scores, batch_gap_scores, dual_bounds, primal_bounds, lp_iterations, 
+             n_nodes, n_cuts, sol_times, standard_solve_time_scores, batch_solve_time_scores, sol_fracs, 
+             primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
 
             # Use our generated scores to update our neural network
             optimiser = reinforce_and_update_neural_network(optimiser, scores, sampled_cut_params, multivariate_normals)
@@ -155,7 +156,7 @@ def train_network(instance_dir, test_instance_dir, solution_dir, feature_dir, de
 
             # There's an issue with memory management as subprocess duplicates memory when it needs only a fraction
             # We will flag some variables for the garbage collector preemptively
-            del scores, gaps, dual_bounds, primal_bounds, lp_iterations, n_nodes, n_cuts, sol_times, sol_fracs, standard_solve_time_scores, batch_solve_time_scores
+            del scores, gaps, dual_bounds, primal_bounds, lp_iterations, n_nodes, n_cuts, sol_times, sol_fracs, standard_solve_time_scores, batch_solve_time_scores, standard_gap_scores, batch_gap_scores
             del primal_dual_ints
 
             # Increment the run index
@@ -363,6 +364,10 @@ def calculate_scores(batch_data, standard_data):
     standard_solve_time_scores = get_score_time('solve_time', True)
     # Get the solving time for the batch solve
     batch_solve_time_scores = get_score_time('solve_time', False)
+    # Get the gap for the standard solve
+    standard_gap_scores = get_score_time('gap', True)
+    # Get the gap for the batch solve
+    batch_gap_scores = get_score_time('gap', False)
     # Get the solution fractionality
     sol_fractionality_scores = get_scores_by_metric('solution_fractionality')
     # Get the primal dual integral scores
@@ -374,7 +379,7 @@ def calculate_scores(batch_data, standard_data):
     for cut_sel_param in ['dir_cut_off', 'efficacy', 'int_support', 'obj_parallelism']:
         _ = get_scores_by_metric(cut_sel_param, difference=False)
 
-    return (primal_dual_difference_scores, gap_scores, dual_bound_scores, primal_bound_scores, lp_iteration_scores,
+    return (primal_dual_difference_scores, gap_scores, standard_gap_scores, batch_gap_scores, dual_bound_scores, primal_bound_scores, lp_iteration_scores,
             num_node_scores, num_cut_scores, solve_time_scores, standard_solve_time_scores, batch_solve_time_scores, 
             sol_fractionality_scores, primal_dual_integral_scores)
 
@@ -807,8 +812,9 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
                                                                                 signal_file, root=root)
 
     # Generate scores based on solve_information
-    (scores, gaps, dual_bounds, primal_bounds, lp_iters, num_nodes, num_cuts, sol_times, standard_solve_time_scores, 
-     batch_solve_time_scores, sol_fracs, primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
+    (scores, gaps, standard_gap_scores, batch_gap_scores, dual_bounds, primal_bounds, lp_iters, num_nodes, 
+     num_cuts, sol_times, standard_solve_time_scores, batch_solve_time_scores, sol_fracs, 
+     primal_dual_ints) = calculate_scores(batch_data, standard_solve_data)
 
     # Add all data related to the batch to the summary writer
     tensorboard_writer = add_data_to_tensorboard_writer(tensorboard_writer, batch_data, scores, gaps,
@@ -837,6 +843,8 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
             solve_time = float(np.mean([sol_times[instance][rand_seed][0] for rand_seed in rand_seeds]))
             standard_solve_time = float(np.mean([standard_solve_time_scores[instance][rand_seed][0] for rand_seed in rand_seeds]))
             batch_solve_time = float(np.mean([batch_solve_time_scores[instance][rand_seed][0] for rand_seed in rand_seeds]))
+            standard_gap = float(np.mean([standard_gap_scores[instance][rand_seed][0] for rand_seed in rand_seeds]))
+            batch_gap = float(np.mean([batch_gap_scores[instance][rand_seed][0] for rand_seed in rand_seeds]))
             parameters = []
             for rand_seed in rand_seeds:
                 parameters.append([bd[instance][rand_seed][0]['dir_cut_off'],
@@ -845,7 +853,8 @@ def run_test_set(instance_dir, solution_dir, feature_dir, results_dir,
                                    bd[instance][rand_seed][0]['obj_parallelism']])
             yaml_data = {instance: {'dir_cut_off': dir_cut_off, 'efficacy': efficacy, 'int_support': int_support,
                                     'obj_parallelism': obj_parallel, 'score': score, 'dual_bound': dual_bound,
-                                    'gap': gap, 'num_lp_iterations': lp_iter, 'num_nodes': num_node,
+                                    'gap': gap, 'standard_gap': standard_gap, 'batch_gap': batch_gap, 
+                                    'num_lp_iterations': lp_iter, 'num_nodes': num_node,
                                     'num_cuts': num_cut, 'solution_fractionality': sol_frac, 'parameters': parameters,
                                     'improvement': score, 'solve_time': solve_time, 'standard_solve_time': standard_solve_time,
                                     'batch_solve_time': batch_solve_time, 'status': status}}

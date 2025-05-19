@@ -14,19 +14,21 @@ if __name__ == "__main__":
     parser.add_argument('time_limit', type=int, help='time_limit')
     parser.add_argument('seed', type=int, help='seed')
     parser.add_argument('nb_of_instances', type=int, help='nb_of_instances')
-    parser.add_argument('fixedcutsel', type=bool, help='fixedcutsel')
+    parser.add_argument('fixedcutsel', type=int, help='0 ou 1, fixedcutsel')
     parser.add_argument('node_lim', type=int, help='node_lim')
     parser.add_argument('sol_path', type=str, help='sol_path')
-    parser.add_argument('transformed', type=bool, help='transformed')
+    parser.add_argument('transformed', type=int, help='0 ou 1, tranformed')
     args = parser.parse_args()
+    fixedcutsel = bool(args.fixedcutsel)
+    transformed = bool(args.transformed)
     if args.problem in ["gisp", "wpsm", "fcmcnf"]:
-        if args.transformed:
+        if transformed:
             lp_dir = os.path.join(os.path.dirname(__file__), f"GNN_method/TransformedInstances/{args.training_folder}/")
         else:
             lp_dir = os.path.join(os.path.dirname(__file__), f"data/{args.problem}/{args.training_folder}/")
         meannnodes, mean_val = scip_solver.perform_SCIP_instances_using_a_tuned_comp_policy(
             instances_folder=lp_dir,
-            cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=args.fixedcutsel, 
+            cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
             node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path)
         print(mean_val)
     else:
