@@ -5,8 +5,8 @@
 #SBATCH --time=9-00:00:00
 #SBATCH -p batch
 #SBATCH --qos=long
-#SBATCH --output=3_GP.out
-#SBATCH --error=3_GP.err
+#SBATCH --output=3_Basic_GP.out
+#SBATCH --error=3_Basic_GP.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 
@@ -30,7 +30,7 @@ fi
 ARGUMENT1=$1
 
 echo "run GP"
-python main.py "$ARGUMENT1" GNN_method/TransformedSolutions/
+python basic_main.py "$ARGUMENT1" GNN_method/TransformedSolutions/
 
 echo "Fin du job à $(date)"
 
