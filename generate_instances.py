@@ -13,16 +13,16 @@ if __name__ == "__main__":
     alphaE2 = 0.5  # Probability of building an edge
 
     # Graph parameters for GISP problem representation
-    min_n = 60 #120  # Minimum number of nodes in the graph
-    max_n = 70 #140  # Maximum number of nodes in the graph
+    min_n = 120  # Minimum number of nodes in the graph
+    max_n = 140  # Maximum number of nodes in the graph
     er_prob = 0.6  # Erdos-Rényi random graph parameter
 
-    ########### SMALL PARAM FOR TESTING ###########
+    """########### SMALL PARAM FOR TESTING ###########
     n=4
     n_test=4
     min_n=50
     max_n=60
-    ########### SMALL PARAM FOR TESTING ###########
+    ########### SMALL PARAM FOR TESTING ###########"""
 
     training_file = "data/gisp/train"
 

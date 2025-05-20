@@ -55,7 +55,7 @@ int main(int argc, char*argv[]) {
 			time = dfTraTime;
 
 			//testing
-			readTestData(run, job);
+			//readTestData(run, job);
 			pop.bestPro.program_test_exe();
 			test_err = pop.bestPro.fitness;
 			test_R2 = pop.bestPro.get_test_R2();

@@ -26,7 +26,7 @@ if __name__ == "__main__":
     initial_pop = 50  # Population size for tree-based heuristics
     mate = 0.9  # Crossover rate
     mutate = 0.1  # Mutation rate
-    nb_of_gen = 15  # Number of generations
+    nb_of_gen = 20  # Number of generations
     seed = args.seed  # Random seed
     sol_path = args.sol_path  # Path to the solution file
 
