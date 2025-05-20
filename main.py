@@ -31,13 +31,15 @@ if __name__ == "__main__":
     sol_path = args.sol_path  # Path to the solution file
 
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
-    saving_folder = os.path.join(conf.ROOT_DIR, "outcomes/GP_function")
 
-    
-
-    # Ensure the saving directory exists
-    if not os.path.exists(saving_folder):
-        os.makedirs(saving_folder)
+    # Define the folder containing simulation results (defaults to the first element in this folder)
+    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes")
+    if not os.path.exists(simulation_folder):
+        os.makedirs(simulation_folder)
+    function_folder = os.path.join(simulation_folder, "GP_function")
+    problem_folder = os.path.join(simulation_folder, problem)
+    os.makedirs(function_folder, exist_ok=True)  # Create the problem folder if it doesn't exist
+    os.makedirs(problem_folder, exist_ok=True)
 
     # Tournament parameters
     fitness_size = 5  # Number of individuals in the fitness tournament
@@ -77,7 +79,7 @@ if __name__ == "__main__":
         nb_of_gen=nb_of_gen,
         seed=seed,
         node_select=node_select,
-        saving_folder=saving_folder,
+        saving_folder=function_folder,
         name=name,
         training_folder=training_folder,
         fitness_size=fitness_size,
@@ -89,25 +91,18 @@ if __name__ == "__main__":
         node_lim=node_lim,
         sol_path=sol_path,
         transformed=GNN_transformed
-    )
-
-    # Define the folder containing simulation results (defaults to the first element in this folder)
-    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes")
-    function_folder = os.path.join(simulation_folder, "GP_function")
-    problem_folder = os.path.join(simulation_folder, problem)
-    os.makedirs(function_folder, exist_ok=True)  # Create the problem folder if it doesn't exist
-    os.makedirs(problem_folder, exist_ok=True)  
+    )  
 
     # Evaluate the convergence of GP across generations
     gp_function = convergence_of_gp_over_generations(simulation_folder,saving=False, show=False)
 
-    gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
+    gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter
     print(gp_function, flush=True)
     problem = "gisp"
     partition= "Test"
-    evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
-                                                   fixedcutsel=GNN_comparison, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
-                                                   build_set_of_instances=False,saving_folder="outcomes")
+    evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, fixedcutsel=GNN_comparison, 
+                      GNN_transformed=GNN_transformed, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
+                      build_set_of_instances=False,saving_folder="outcomes")
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["Test"], saving_folder="outcomes")

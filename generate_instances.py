@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     ########### SMALL PARAM FOR TESTING ###########
     n=4
-    n_test=30
+    n_test=4
     min_n=50
     max_n=60
     ########### SMALL PARAM FOR TESTING ###########

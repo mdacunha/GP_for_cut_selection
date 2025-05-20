@@ -11,7 +11,8 @@ import data.build_instances
 
 
 def evaluation_gnn_gp(problem, partition, nb_of_test_instances, gp_func_dic, time_limit=None, 
-                                                   fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, do_gnn=True,build_set_of_instances=True,saving_folder="simulation_outcomes"):
+                        fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, 
+                        do_gnn=True, build_set_of_instances=True,saving_folder="simulation_outcomes"):
     nb_of_built_instances = 100
     json_gp_func_dic = json.dumps(gp_func_dic)
     is_ok = False

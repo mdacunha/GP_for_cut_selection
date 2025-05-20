@@ -81,10 +81,11 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
     if time_limit != 0:
         if fixedcutsel and Test:
             score = 0
-            standard_solve_data = get_standard_solve_data("RootResults/", root=True)
-            sd = standard_solve_data[instance_path][1]
+            root_path = os.path.join(ROOT_DIR, "GNN_method", "RootResults/")
+            standard_solve_data = get_standard_solve_data(root_path, root=True)
+            sd = standard_solve_data[instance_path.split("/")[-1].split("__")[0]][1]
             bd = model.getGap()
-            score = (sd["gap"] - bd["gap"]) / (abs(sd["gap"]) + 1e-8)
+            score = (sd["gap"] - bd) / (abs(sd["gap"]) + 1e-8)
             return model.getNNodes(), score
         return model.getNNodes(), model.getGap()
     return model.getNNodes(), model.getSolvingTime()
