@@ -14,14 +14,14 @@ if __name__ == "__main__":
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
-    dossier = os.path.join(conf.ROOT_DIR, "data", "gisp", "test")
+    dossier = os.path.join(conf.ROOT_DIR, "data", "basic_gisp", "test")
     contenu = os.listdir(dossier)
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
 
     n_test_instances = len(fichiers)  
     
     # Parameters for GP_function training
-    problem = "gisp"  # Problem type
+    problem = "basic_gisp"  # Problem type
     training_folder = "train"
     partition= "test"
     initial_pop = 50  # Population size for tree-based heuristics
@@ -100,13 +100,13 @@ if __name__ == "__main__":
 
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
     print(gp_function, flush=True)
-    problem = "gisp"
+    problem = "basic_gisp"
     evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
                                                    fixedcutsel=GNN_comparison, GNN_transformed=GNN_transformed, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
                                                    build_set_of_instances=False,saving_folder=simulation_folder)
 
     # Gather information from JSON files for the specified problems and partitions
-    dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["test"], saving_folder=simulation_folder)
+    dic_info = gather_info_from_json_files(problems=["basic_gisp"], partitions=["test"], saving_folder=simulation_folder)
 
     # Display the output results
     just_get_the_output_results(dic_info)
