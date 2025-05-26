@@ -3,7 +3,8 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
-#include "SemanticLGP_for_SR-main/program.h"
+#include "program.h"
+#include <pybind11/embed.h>
 
 
 // Fonction d'appel du script python avec arguments et récupération du float imprimé
@@ -65,3 +66,5 @@ double call_python_script_with_args(const std::vector<std::string>& args) {
 
     return val;
 }
+
+double call_python_script_with_args(const std::vector<std::string>& args);

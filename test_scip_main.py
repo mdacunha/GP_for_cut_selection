@@ -3,7 +3,7 @@ import shutil
 import conf
 import argparse
 from data.build_gisp_instances import *
-from basic_genetic_programming_for_node_scoring import *
+from genetic_programming_for_node_scoring import *
 from artificial_pbs.evaluation_convergence_of_GP_over_gens_articial_pbs import *
 from artificial_pbs.evaluation_artificial_problems import *
 from artificial_pbs.build_tables_artificial_pb_perfs import *
@@ -14,16 +14,15 @@ if __name__ == "__main__":
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
-    dossier = os.path.join(conf.ROOT_DIR, "data", "basic_wpsm", "test")
+    dossier = os.path.join(conf.ROOT_DIR, "data", "basic_gisp", "test")
     contenu = os.listdir(dossier)
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
 
     n_test_instances = len(fichiers)  
     
     # Parameters for GP_function training
-    problem = "basic_wpsm"  # Problem type
-    training_folder = "train"
-    partition= "test"
+    problem = "basic_gisp"  # Problem type
+    training_folder = "Train"
     initial_pop = 50  # Population size for tree-based heuristics
     mate = 0.9  # Crossover rate
     mutate = 0.1  # Mutation rate
@@ -34,14 +33,13 @@ if __name__ == "__main__":
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
-    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes_basic" + "__seed__" + seed)
-    # Ensure the saving directory exists
+    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes_test_SCIP" + "__seed__" + args.seed)
     if not os.path.exists(simulation_folder):
         os.makedirs(simulation_folder)
     function_folder = os.path.join(simulation_folder, "GP_function")
     problem_folder = os.path.join(simulation_folder, problem)
     os.makedirs(function_folder, exist_ok=True)  # Create the problem folder if it doesn't exist
-    os.makedirs(problem_folder, exist_ok=True) 
+    os.makedirs(problem_folder, exist_ok=True)
 
     # Tournament parameters
     fitness_size = 5  # Number of individuals in the fitness tournament
@@ -61,14 +59,14 @@ if __name__ == "__main__":
     else:
         node_lim = -1
     
-    """########### SMALL PARAM FOR TESTING ###########
-    #n_test_instances
+    ########### SMALL PARAM FOR TESTING ###########
+    #n_test_instances=4
     initial_pop=1
     nb_of_gen=0
     seed=0
     node_lim=-1
     fitness_size=1
-    ############ SMALL PARAM FOR TESTING ###########"""
+    ############ SMALL PARAM FOR TESTING ###########
 
     # Construct a unique name for the run
     name = f"{problem}_pop_{initial_pop}_nb_gen{nb_of_gen}_seed_{seed}"
@@ -93,17 +91,18 @@ if __name__ == "__main__":
         node_lim=node_lim,
         sol_path=sol_path,
         transformed=GNN_transformed
-    ) 
+    )  
 
     # Evaluate the convergence of GP across generations
     gp_function = convergence_of_gp_over_generations(simulation_folder,saving=False, show=False)
 
-    gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
+    gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter
     print(gp_function, flush=True)
     #problem = "basic_gisp"
-    evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, 
-                        fixedcutsel=GNN_comparison, GNN_transformed=GNN_transformed, node_lim=node_lim, 
-                        sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder)
+    partition= "Test"
+    evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, fixedcutsel=GNN_comparison, 
+                      GNN_transformed=GNN_transformed, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
+                      build_set_of_instances=False,saving_folder=simulation_folder)
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=[problem], partitions=[partition], saving_folder=simulation_folder)

@@ -4,7 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Users/mathd/miniconda3/include"
+                "C:/Users/mathd/miniconda3/include",
+                "C:/Users/mathd/miniconda3/envs/GP/Include",
+                "C:/Users/mathd/miniconda3/envs/GP/lib/site-packages/pybind11/include"
 
             ],
             "defines": [

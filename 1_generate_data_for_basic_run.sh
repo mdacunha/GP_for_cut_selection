@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH --time=0-00:05:00
 #SBATCH -p batch
-#SBATCH --output=1_Gen_data_output.out
-#SBATCH --error=1_Gen_data_error.err
+#SBATCH --output=1_Gen_data_basic_output.out
+#SBATCH --error=1_Gen_data_basic_error.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 

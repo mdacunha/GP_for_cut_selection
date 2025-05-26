@@ -3,24 +3,22 @@
 #include"Data.h"
 #include"Population.h"
 #include"StatisticFile.h"
+#include <pybind11/pybind11.h>
 #define _CRT_SECURE_NO_WARNINGS
 using namespace std;
 
-int main(int argc, char*argv[]) {
+#include <string>
 
-	const int iterative = 30;//the total number of independent runs
-	int run;
-	int job;
-	char base[200];
+double run_cpp(int run, int job, const std::string& base) {
+    const int iterative = 30;
+    StatisticFile SF;
+    char base_c[200];
+	strcpy(base_c, base.c_str());
 
-	sscanf(argv[1], "%d", &run);
-	sscanf(argv[2], "%d", &job);
-	sscanf(argv[3], "%s", base);
+	SF.initFile(run, job, base_c);
 
-	StatisticFile SF;
-	SF.initFile(run, job, base);
 
-	clock_t start, end;
+    clock_t start, end;
 	{
 		SF.problemInit(iterative);
 		{
@@ -31,7 +29,7 @@ int main(int argc, char*argv[]) {
 				norm_flag = false;
 			}
 
-			//readTrainData(run, job);
+			readTrainData(run, job);
 			SF.independentRunInit(run, job);
 			double suc = 0, suc_R2 = 0, eva_times = 0, train_err = 1e6, test_err = 1e6, test_R2 = 0, prog_size = 0, time = 0;
 
@@ -46,7 +44,7 @@ int main(int argc, char*argv[]) {
 			end = clock();
 			dfTraTime = (double)(end - start) / CLOCKS_PER_SEC;
 
-			if (pop.bestPro.fitness < 1e-2) {
+			if (pop.bestPro.fitness < 1e-4) {
 				suc = 1;
 			}
 			eva_times = evaluation;
@@ -55,7 +53,7 @@ int main(int argc, char*argv[]) {
 			time = dfTraTime;
 
 			//testing
-			//readTestData(run, job);
+			readTestData(run, job);
 			pop.bestPro.program_test_exe();
 			test_err = pop.bestPro.fitness;
 			test_R2 = pop.bestPro.get_test_R2();
@@ -72,4 +70,11 @@ int main(int argc, char*argv[]) {
 	return 0;
 }
 
+double run_cpp(int run, int job, const std::string& base);
 
+namespace py = pybind11;
+
+PYBIND11_MODULE(mainmodule, m) {
+    m.def("run_cpp", &run_cpp, "Liaison C++ depuis Pybind11",
+          py::arg("run"), py::arg("job"), py::arg("base"));
+}

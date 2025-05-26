@@ -33,7 +33,7 @@ if __name__ == "__main__":
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
-    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes")
+    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes" + "__seed__" + args.seed)
     if not os.path.exists(simulation_folder):
         os.makedirs(simulation_folder)
     function_folder = os.path.join(simulation_folder, "GP_function")
@@ -102,10 +102,10 @@ if __name__ == "__main__":
     partition= "Test"
     evaluation_gnn_gp(problem, partition, n_test_instances, gp_func_dic, time_limit=time_limit, fixedcutsel=GNN_comparison, 
                       GNN_transformed=GNN_transformed, node_lim=node_lim, sol_path=sol_path, do_gnn=False, 
-                      build_set_of_instances=False,saving_folder="outcomes")
+                      build_set_of_instances=False,saving_folder=simulation_folder)
 
     # Gather information from JSON files for the specified problems and partitions
-    dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["Test"], saving_folder="outcomes")
+    dic_info = gather_info_from_json_files(problems=["gisp"], partitions=["Test"], saving_folder=simulation_folder)
 
     # Display the output results
     just_get_the_output_results(dic_info)

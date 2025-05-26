@@ -41,6 +41,9 @@ class CustomCutSelector(Cutsel):
         self.min_orthogonality = min_orthogonality
         random.seed(42)
 
+    def copy(self):
+        return CustomCutSelector(self.threshold)
+    
     def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
         """
         This is the main function used to select cuts. It must be named cutselselect and is called by default when

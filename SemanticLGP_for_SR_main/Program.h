@@ -87,23 +87,23 @@ void Program::ini_semcon() {
 
 void Program::ini_exe(int index) {
 	memset(registers, 0, sizeof(registers));
-	for (int i = 0; i < in_dimen; i++) {
+	/* for (int i = 0; i < in_dimen; i++) {
 		inputs[i] = train_input[index*MaxDataDim + i];
 	}
 	for (int i = 0; i < out_dimen; i++) {
 		outputs[i] = train_output[index*MaxDataDim + i];
-	}
+	} */
 
 }
 
 void Program::ini_test_exe(int index) {
 	memset(registers, 0, sizeof(registers));
-	for (int i = 0; i < in_dimen; i++) {
+	/* for (int i = 0; i < in_dimen; i++) {
 		inputs[i] = test_input[index*MaxDataDim + i];
 	}
 	for (int i = 0; i < out_dimen; i++) {
 		outputs[i] = test_output[index*MaxDataDim + i];
-	}
+	} */
 
 }
 
@@ -115,18 +115,17 @@ double Program::get_train_fitness() {
 	fitness = 0;
 	for (int i = 0; i < input_num; i++) {
 		for (int j = 0; j < out_dimen; j++) {
-			std::vector<std::string> py_args = {
-												"cutpolicyX", "gisp", "trainfolder1", "best_node",
-												"60",  // time_limit
-												"42",  // seed
-												"10",  // nb_of_instances
-												"1",   // fixedcutsel
-												"1000",// node_lim
-												"/path/to/sol", // sol_path
+			std::vector<std::string> py_args = {"pro_body", "gisp", "train", "",
+												"0",  // time_limit
+												"0",  // seed
+												"0",  // nb_of_instances
+												"0",   // fixedcutsel
+												"-1",// node_lim
+												"None", // sol_path
 												"0"    // transformed
 			};
 
-    		double fitness = call_python_script_with_args(py_args);
+    		fitness = call_python_script_with_args(py_args);
 			//fitness += pow(min((train_output[i*MaxDataDim + j]*out_stdu + out_mean) - (actual_output[i*outDataDim + j]*out_stdu + out_mean), 1e4), 2);
 		}
 	}
@@ -138,10 +137,21 @@ double Program::get_test_fitness() {
 	fitness = 0;
 	for (int i = 0; i < input_num; i++) {
 		for (int j = 0; j < out_dimen; j++) {
-			fitness += pow(min(test_output[i*MaxDataDim + j] - (actual_output[i*outDataDim + j]*out_stdu + out_mean), 1e4), 2);
+			std::vector<std::string> py_args = {"pro_body", "gisp", "test", "",
+												"0",  // time_limit
+												"0",  // seed
+												"0",  // nb_of_instances
+												"0",   // fixedcutsel
+												"-1",// node_lim
+												"None", // sol_path
+												"0"    // transformed
+			};
+
+    		fitness = call_python_script_with_args(py_args);
+			//fitness += pow(min((train_output[i*MaxDataDim + j]*out_stdu + out_mean) - (actual_output[i*outDataDim + j]*out_stdu + out_mean), 1e4), 2);
 		}
 	}
-	fitness = sqrt(fitness / input_num);
+	//fitness = sqrt(fitness / input_num);
 	return fitness;
 }
 

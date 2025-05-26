@@ -57,6 +57,17 @@ if __name__ == "__main__":
         node_lim = 1  # Node limit for GNN comparison
     else:
         node_lim = -1
+
+    g++ -O3 -Wall -shared -std=c++17 -fPIC \
+    -I/mingw64/include/python3.10 \
+    -I/mingw64/include \
+    -ISemanticLGP_for_SR_main \
+    SemanticLGP_for_SR_main/main.cpp \
+    SemanticLGP_for_SR_main/Data.cpp \
+    SemanticLGP_for_SR_main/Population.h \
+    SemanticLGP_for_SR_main/StatisticFile.cpp \
+    -o SemanticLGP_for_SR_main/main.pyd
+
     
     ########### SMALL PARAM FOR TESTING ###########
     n_test_instances=4
@@ -72,14 +83,11 @@ if __name__ == "__main__":
     # Run the GP_function training
     
 
-    # Charger la lib compilée
-    mylib = ctypes.CDLL('./Population.dll')
+    import mainmodule
+    mainmodule.run_cpp(run, job, base)
 
-    # Définir les types d'arguments et de retour
-    mylib.add.argtypes = [ctypes.c_int, ctypes.c_int]
-    mylib.add.restype = ctypes.c_int
 
-    ## gcc -shared -o f.dll -fPIC hello.cpp  
+    ## gcc -shared -o main.dll -fPIC SemanticLGP_for_SR-main/main.cpp  
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
     simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes")

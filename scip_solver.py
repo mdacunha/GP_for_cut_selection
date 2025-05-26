@@ -14,6 +14,7 @@ import time
 from utilities import get_filename
 from conf import *
 from cut_selection_policies import CustomCutSelector
+from basic_cut_selection_policies import HybridLikeCutsel, test
 from constraintHandler_GP import RepeatSepaConshdlr
 
 from GNN_method.Slurm.train_neural_network import get_standard_solve_data
@@ -46,21 +47,26 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         model.setParam('constraints/linear/upgrade/varbound', 0)
     if cut_comp == "SCIP":
         pass
+    elif cut_comp == "Test_SCIP":
+        cut_selector = test()
+        model.includeCutsel(cut_selector, "", "", 536870911)
     else:
         # Create a dummy constraint handler that forces the num_rounds amount of separation rounds
-        num_rounds = 50
-        num_cuts_per_round = 10
         if fixedcutsel:
+            num_rounds = 50
+            num_cuts_per_round = 10
             constraint_handler = RepeatSepaConshdlr(model, num_rounds)
             model.includeConshdlr(constraint_handler, "RepeatSepa", "Forces a certain number of separation rounds",
                                     sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
                                     eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
                                     presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
-        cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
-        model.includeCutsel(cut_selector, "", "", 536870911)
-        if fixedcutsel:
+            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
+            model.includeCutsel(cut_selector, "", "", 536870911)
             model.setParam('separating/maxstallroundsroot', num_rounds)
             model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
+        else:
+            cut_selector = HybridLikeCutsel(comp_policy=cut_comp)
+            model.includeCutsel(cut_selector, "", "", 536870911)
 
     if fixedcutsel:
         model.setHeuristics(SCIP_PARAMSETTING.OFF)

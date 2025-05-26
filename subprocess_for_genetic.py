@@ -21,7 +21,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
-    if args.problem in ["gisp", "basic_gisp", "wpsm", "fcmcnf"]:
+    if args.problem in ["gisp", "basic_gisp", "basic_wpsm", "wpsm", "fcmcnf"]:
         if transformed:
             lp_dir = os.path.join(os.path.dirname(__file__), f"GNN_method/TransformedInstances/{args.training_folder}/")
         else:

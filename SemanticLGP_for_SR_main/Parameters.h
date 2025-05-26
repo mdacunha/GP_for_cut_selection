@@ -25,7 +25,7 @@ double raw_test_input[MaxDataNum*MaxDataDim];
 double test_output[MaxDataNum*MaxDataDim];
 
 int input_num = 1;
-int in_dimen = 0;
+int in_dimen = 1;
 int out_dimen = 1;
 
 bool norm_flag = false;
