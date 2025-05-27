@@ -11,7 +11,7 @@ import argparse
 import numpy as np
 import time
 
-from utilities import get_filename
+from GNN_method.utilities import get_filename
 from conf import *
 from cut_selection_policies import CustomCutSelector, test
 from constraintHandler_GP import RepeatSepaConshdlr
@@ -22,15 +22,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, Test=False):
     model = Model()
     model.hideOutput()
-    optsol = None
-    if fixedcutsel:
-        """all_param_names = model.getParams()
-
-        mask = 1 << SCIP_HEURTIMING.BEFOREPRESOL
-        for pname in all_param_names:
-            if pname.startswith("heuristics/") and pname.endswith("/timingmask"):
-                model.setParam(pname, mask)"""
-            
+    if fixedcutsel:            
         model.setParam('limits/nodes', node_lim)
         model.setParam('presolving/maxrounds', 1)
         model.setParam('estimation/restarts/restartlimit', 0)
@@ -64,7 +56,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             model.setParam('separating/maxstallroundsroot', num_rounds)
             model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
         else:
-            cut_selector = HybridLikeCutsel(comp_policy=cut_comp)
+            cut_selector = CustomCutSelector(comp_policy=cut_comp)
             model.includeCutsel(cut_selector, "", "", 536870911)
 
     if fixedcutsel:

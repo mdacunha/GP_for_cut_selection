@@ -45,6 +45,6 @@ if __name__ == "__main__":
             index += 1
         meannnodes, mean_val = scip_solver.perform_SCIP_instances_using_a_tuned_comp_policy(
             instances_folder=lp_dir,
-            cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True,
-            time_limit=args.time_limit, instances_indexes=instances_indexes)
+            cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
+            node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path)
         print(mean_val)

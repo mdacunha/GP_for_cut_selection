@@ -23,7 +23,8 @@ class CustomCutSelector(Cutsel):
         self,
         comp_policy,
         minortho=0.9,
-        seed=42
+        seed=42,
+        num_cuts_per_round=None
     ):
         super().__init__()
         self.minortho = minortho
@@ -76,6 +77,8 @@ class CustomCutSelector(Cutsel):
                 row_vectors.append(rowvec)
             else:
                 selected.append(False)
+            if self.num_cuts_per_round == sum(selected):
+                break
 
         return selected
     

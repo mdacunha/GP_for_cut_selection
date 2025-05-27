@@ -3,7 +3,7 @@ import shutil
 import conf
 import argparse
 from data.build_gisp_instances import *
-from genetic_programming_for_node_scoring import *
+from GNN_genetic_programming_for_node_scoring import *
 from artificial_pbs.evaluation_convergence_of_GP_over_gens_articial_pbs import *
 from artificial_pbs.evaluation_artificial_problems import *
 from artificial_pbs.build_tables_artificial_pb_perfs import *
