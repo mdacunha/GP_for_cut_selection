@@ -1,17 +1,9 @@
+from pyscipopt.scip import Cutsel
 import random
 import math
-from pyscipopt import Model, quicksum, SCIP_RESULT, SCIP_PARAMSETTING
-from pyscipopt.scip import Cutsel
-#import pyscipopt.scip as sp
-import numpy as np
-import time
-#import torch
-#from joblib import load
 from operator import *
 import re
-import copy
 
-#from learning_to_comparenodes.learning.model import GNNPolicy, RankNet
 
 def protectedDiv(left, right):
     try:
@@ -27,96 +19,67 @@ operations = {
 }
 
 class CustomCutSelector(Cutsel):
-
-    def __init__(self, comp_policy, num_cuts_per_round=10, min_orthogonality_root=0.9,
-                 min_orthogonality=0.9):
+    def __init__(
+        self,
+        comp_policy,
+        minortho=0.9,
+        seed=42
+    ):
         super().__init__()
+        self.minortho = minortho
         self.comp_policy = comp_policy
-        #self.getDualboundRoot = self.model.getDualboundRoot()
-        #self.getNConss = self.model.getNConss()
-        #self.getNVars = self.model.getNVars()
-
-        self.num_cuts_per_round = num_cuts_per_round
-        self.min_orthogonality_root = min_orthogonality_root
-        self.min_orthogonality = min_orthogonality
-        random.seed(42)
+        self.random = random.Random(seed)
 
     def copy(self):
-        return CustomCutSelector(self.threshold)
-    
-    def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
-        """
-        This is the main function used to select cuts. It must be named cutselselect and is called by default when
-        SCIP performs cut selection if the associated cut selector has been included (assuming no cutsel with higher
-        priority was called successfully before). This function aims to add self.num_cuts_per_round many cuts to
-        the LP per round, prioritising the highest ranked cuts. It adds the highest ranked cuts, filtering by
-        parallelism. In the case when not enough cuts are added and all the remaining cuts are too parallel,
-        we simply add those with the highest score.
-        @param cuts: These are the optional cuts we get to select from
-        @type cuts: List of pyscipopt rows
-        @param forcedcuts: These are the cuts that must be added
-        @type forcedcuts: List of pyscipopt rows
-        @param root: Boolean for whether we're at the root node or not
-        @type root: Bool
-        @param maxnselectedcuts: Maximum number of selected cuts
-        @type maxnselectedcuts: int
-        @return: Dictionary containing the keys 'cuts', 'nselectedcuts', result'. Warning: Cuts can only be reordered!
-        @rtype: dict
-        """
-        # Initialise number of selected cuts and number of cuts that are still valid candidates
-        n_cuts = len(cuts)
-        nselectedcuts = 0
+        return CustomCutSelector(
+            minortho=self.minortho,
+            seed=42  # ou vous pouvez copier self.random.getstate()
+        )
 
-        # Get the number of cuts that we will select this round.
-        num_cuts_to_select = min(maxnselectedcuts, max(self.num_cuts_per_round - len(forcedcuts), 0), n_cuts)
+    def select(self, cuts):
+        scored = []
+        for cut in cuts:
 
-        # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
-        # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
-        if root:
-            max_parallel = 1 - self.min_orthogonality_root
-            good_max_parallel = max(0.5, max_parallel)
-        else:
-            max_parallel = 1 - self.min_orthogonality
-            good_max_parallel = max(0.5, max_parallel)
+            score = self.scoring(cut)
 
-        # Generate the scores of each cut and thereby the maximum score
-        # max_forced_score, forced_scores = self.scoring(forcedcuts)
-        max_non_forced_score, scores = self.scoring(cuts)
+            # Biais si issue du pool global
+            if cut.isInGlobalCutpool():
+                score += 1e-4
 
-        good_score = max_non_forced_score
+            # Bruit aléatoire
+            score += self.random.uniform(0.0, 1e-6)
 
-        # This filters out all cuts in cuts who are parallel to a forcedcut.
-        for forced_cut in forcedcuts:
-            n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, forced_cut, cuts,
-                                                                scores, max_parallel, good_max_parallel, good_score)
+            scored.append((cut, score))
 
-        if maxnselectedcuts > 0 and num_cuts_to_select > 0:
-            while n_cuts > 0:
-                # Break the loop if we have selected the required amount of cuts
-                if nselectedcuts == num_cuts_to_select:
+        # Tri décroissant
+        scored.sort(key=lambda x: x[1], reverse=True)
+
+        # Sélection avec filtrage d’orthogonalité
+        selected = []
+        row_vectors = []  # vecteurs des coupes déjà sélectionnées
+
+        for cut, score in scored:
+            rowvec = cut.getDenseRepresentation()
+            is_orthogonal = True
+            for other in row_vectors:
+                dot = sum(a * b for a, b in zip(rowvec, other))
+                norm1 = math.sqrt(sum(a**2 for a in rowvec))
+                norm2 = math.sqrt(sum(b**2 for b in other))
+                if norm1 == 0 or norm2 == 0:
+                    continue
+                cos_theta = dot / (norm1 * norm2)
+                if abs(cos_theta) > (1 - self.minortho):  # trop parallèle
+                    is_orthogonal = False
                     break
-                # Re-sorts cuts and scores by putting the best cut at the beginning
-                cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
-                nselectedcuts += 1
-                n_cuts -= 1
-                n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, cuts[nselectedcuts - 1],
-                                                                    cuts,
-                                                                    scores, max_parallel, good_max_parallel,
-                                                                    good_score)
+            if is_orthogonal:
+                selected.append(True)
+                row_vectors.append(rowvec)
+            else:
+                selected.append(False)
 
-            # So far we have done the algorithm from the default method. We will now enforce choosing the highest
-            # scored cuts from those that were previously removed for being too parallel.
-            # Reset the n_cuts counter
-            n_cuts = len(cuts) - nselectedcuts
-            for remaining_cut_i in range(nselectedcuts, num_cuts_to_select):
-                cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
-                nselectedcuts += 1
-                n_cuts -= 1
-
-        return {'cuts': cuts, 'nselectedcuts': nselectedcuts,
-                'result': SCIP_RESULT.SUCCESS}
-
-    def scoring(self, cuts):
+        return selected
+    
+    def scoring(self, cut):
 
         def parse_args(args, context):
             # Split arguments considering nested functions
@@ -151,109 +114,133 @@ class CustomCutSelector(Cutsel):
                     return float(expr)
                 except ValueError:
                     return context[expr]
-        
+                
         # initialise the scoring of each cut as well as the max_score
-        scores = [0] * len(cuts)
-        max_score = 0.0
-        
+        #scores = 0.0        
         
         #getDualboundRoot = self.model.getDualboundRoot()
         getNVars = self.model.getNVars()
-        sol = self.model.getBestSol() #if self.model.getNSols() > 0 else None
+        #sol = self.model.getBestSol() #if self.model.getNSols() > 0 else None
         getNConss = self.model.getNConss()
 
+        try:
+            cutoffdist = cut.getLPSolCutoffDistance()
+        except:
+            cutoffdist = 0.0  # pas toujours dispo
+
         # Cycle over all cuts and score them
-        for i in range(len(cuts)):
 
-            context = {
-                    'getDepth': self.model.getDepth(),
-                    #'getEstimate': getEstimate,
-                    #'getLowerbound': getLowerbound,
-                    #'getDualboundRoot': getDualboundRoot,
-                    'getNConss': getNConss,
-                    'getNVars': getNVars,
-                    'getNNonz': cuts[i].getNNonz(),
-                    'getCutEfficacy': self.model.getCutEfficacy(cuts[i]),
-                    'getCutLPSolCutoffDistance': self.model.getCutLPSolCutoffDistance(cuts[i], sol), #if sol is not None else None,
-                    'getRowNumIntCols': self.model.getRowNumIntCols(cuts[i]),
-                    'getRowObjParallelism': self.model.getRowObjParallelism(cuts[i]),
-                    "10000000":10000000
-                }
+        context = {
+                'getDepth': self.model.getDepth(),
+                'getNumIntCols': cut.getNumIntCols(),
+                'getNConss': getNConss,
+                'getNVars': getNVars,
+                'getNNz': cut.getNNz(),
+                'getEfficacy': cut.getEfficacy(),
+                'getCutLPSolCutoffDistance': cutoffdist,
+                'getObjParallelism': cut.getObjParallelism(),
+                "10000000":10000000
+            }
                 
-            score = evaluate_expression(self.comp_policy, context)
+        score = evaluate_expression(self.comp_policy, context)
 
-            score += 1e-4 if cuts[i].isInGlobalCutpool() else 0
-            score += random.uniform(0, 1e-6)
-            max_score = max(max_score, score)
-            scores[i] = score
+        score += 1e-4 if cut.isInGlobalCutpool() else 0
+        score += random.uniform(0, 1e-6)
 
-        return max_score, scores
-    
-        
+        return score
 
-    def filter_with_parallelism(self, n_cuts, nselectedcuts, cut, cuts, scores, max_parallel, good_max_parallel,
-                                good_score):
-        """
-        Filters the given cut list by any cut_iter in cuts that is too parallel to cut. It does this by moving the
-        parallel cut to the back of cuts, and decreasing the indices of the list that are scanned over.
-        For the main portion of our selection we then never touch these cuts. In the case of us wanting to
-        forcefully select an amount which is impossible under this filtering method however, we simply select the
-        remaining highest scored cuts from the supposed untouched cuts.
-        @param n_cuts: The number of cuts that are still viable candidates
-        @type n_cuts: int
-        @param nselectedcuts: The number of cuts already selected
-        @type nselectedcuts: int
-        @param cut: The cut which we will add, and are now using to filter the remaining cuts
-        @type cut: pyscipopt row
-        @param cuts: The list of cuts
-        @type cuts: List of pyscipopt rows
-        @param scores: The scores of each cut
-        @type scores: List of floats
-        @param max_parallel: The maximum allowed parallelism for non good cuts
-        @type max_parallel: Float
-        @param good_max_parallel: The maximum allowed parallelism for good cuts
-        @type good_max_parallel: Float
-        @param good_score: The benchmark of whether a cut is 'good' and should have it's allowed parallelism increased
-        @type good_score: Float
-        @return: The now number of viable cuts, the complete list of cuts, and the complete list of scores
-        @rtype: int, list of pyscipopt rows, list of pyscipopt rows
-        """
-        # Go backwards through the still viable cuts.
-        for i in range(nselectedcuts + n_cuts - 1, nselectedcuts - 1, -1):
-            cut_parallel = self.model.getRowParallelism(cut, cuts[i])
-            # The maximum allowed parallelism depends on the whether the cut is 'good'
-            allowed_parallel = good_max_parallel if scores[i] >= good_score else max_parallel
-            if cut_parallel > allowed_parallel:
-                # Throw the cut to the end of the viable cuts and decrease the number of viable cuts
-                cuts[nselectedcuts + n_cuts - 1], cuts[i] = cuts[i], cuts[nselectedcuts + n_cuts - 1]
-                scores[nselectedcuts + n_cuts - 1], scores[i] = scores[i], scores[nselectedcuts + n_cuts - 1]
-                n_cuts -= 1
+class test(Cutsel):
+    def __init__(
+        self,
+        efficacy_weight=1.0,
+        objparal_weight=0.1,
+        intsupport_weight=0.1,
+        dircutoffdist_weight=0.0,
+        minortho=0.9,
+        seed=42
+    ):
+        super().__init__()
+        self.efficacy_weight = efficacy_weight
+        self.objparal_weight = objparal_weight
+        self.intsupport_weight = intsupport_weight
+        self.dircutoffdist_weight = dircutoffdist_weight
+        self.minortho = minortho
+        self.random = random.Random(seed)
 
-        return n_cuts, cuts, scores
+    def copy(self):
+        return test(
+            efficacy_weight=self.efficacy_weight,
+            objparal_weight=self.objparal_weight,
+            intsupport_weight=self.intsupport_weight,
+            dircutoffdist_weight=self.dircutoffdist_weight,
+            minortho=self.minortho,
+            seed=42  # ou vous pouvez copier self.random.getstate()
+        )
 
-    def select_best_cut(self, n_cuts, nselectedcuts, cuts, scores):
-        """
-        Moves the cut with highest score which is still considered viable (not too parallel to previous cuts) to the
-        front of the list. Note that 'front' here still has the requirement that all added cuts are still behind it.
-        @param n_cuts: The number of still viable cuts
-        @type n_cuts: int
-        @param nselectedcuts: The number of cuts already selected to be added
-        @type nselectedcuts: int
-        @param cuts: The list of cuts themselves
-        @type cuts: List of pyscipopt rows
-        @param scores: The scores of each cut
-        @type scores: List of floats
-        @return: The re-sorted list of cuts, and the re-sorted list of scores
-        @rtype: List of pyscipopt rows, list of floats
-        """
-        # Initialise the best index and score
-        best_pos = nselectedcuts
-        best_score = scores[nselectedcuts]
-        for i in range(nselectedcuts + 1, nselectedcuts + n_cuts):
-            if scores[i] > best_score:
-                best_pos = i
-                best_score = scores[i]
-        # Move the cut with highest score to the front of the still viable cuts
-        cuts[nselectedcuts], cuts[best_pos] = cuts[best_pos], cuts[nselectedcuts]
-        scores[nselectedcuts], scores[best_pos] = scores[best_pos], scores[nselectedcuts]
-        return cuts, scores
+    def select(self, cuts):
+        scored = []
+        for cut in cuts:
+            # Efficacité (distance / norme)
+            efficacy = cut.getEfficacy()
+
+            # Parallélisme avec l'objectif
+            objparal = cut.getObjParallelism()
+
+            # Support entier
+            try:
+                n_intcols = cut.getNumIntCols()
+                nnz = cut.getNNZ()
+                intsupport = n_intcols / nnz if nnz > 0 else 0.0
+            except:
+                intsupport = 0.0  # fallback si info non dispo
+
+            # Distance coupure (optionnelle)
+            try:
+                cutoffdist = cut.getLPSolCutoffDistance()
+            except:
+                cutoffdist = 0.0  # pas toujours dispo
+
+            # Score pondéré
+            score = (
+                self.efficacy_weight * efficacy +
+                self.objparal_weight * objparal +
+                self.intsupport_weight * intsupport +
+                self.dircutoffdist_weight * max(efficacy, cutoffdist)
+            )
+
+            # Biais si issue du pool global
+            if cut.isInGlobalCutpool():
+                score += 1e-4
+
+            # Bruit aléatoire
+            score += self.random.uniform(0.0, 1e-6)
+
+            scored.append((cut, score))
+
+        # Tri décroissant
+        scored.sort(key=lambda x: x[1], reverse=True)
+
+        # Sélection avec filtrage d’orthogonalité
+        selected = []
+        row_vectors = []  # vecteurs des coupes déjà sélectionnées
+
+        for cut, score in scored:
+            rowvec = cut.getDenseRepresentation()
+            is_orthogonal = True
+            for other in row_vectors:
+                dot = sum(a * b for a, b in zip(rowvec, other))
+                norm1 = math.sqrt(sum(a**2 for a in rowvec))
+                norm2 = math.sqrt(sum(b**2 for b in other))
+                if norm1 == 0 or norm2 == 0:
+                    continue
+                cos_theta = dot / (norm1 * norm2)
+                if abs(cos_theta) > (1 - self.minortho):  # trop parallèle
+                    is_orthogonal = False
+                    break
+            if is_orthogonal:
+                selected.append(True)
+                row_vectors.append(rowvec)
+            else:
+                selected.append(False)
+
+        return selected

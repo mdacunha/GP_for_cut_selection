@@ -34,7 +34,7 @@ if __name__ == "__main__":
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
 
     # Define the folder containing simulation results (defaults to the first element in this folder)
-    simulation_folder = os.path.join(conf.ROOT_DIR, "outcomes_basic" + "__seed__" + seed)
+    simulation_folder = os.path.join(conf.ROOT_DIR, problem + "__seed__" + seed)
     # Ensure the saving directory exists
     if not os.path.exists(simulation_folder):
         os.makedirs(simulation_folder)
@@ -50,13 +50,12 @@ if __name__ == "__main__":
     nb_of_instances = 0  # Number of instances (not applicable for artificial problems)
 
     # Environment parametrisation for SCIP solving
-    #Basic_algo = False
     GNN_comparison = False
-    semantic_algo = False
+    #semantic_algo = False
 
     GNN_transformed = False  # Whether to use the transformed version of the problem for comparison with GNN
-
-    if GNN_comparison:
+    root = False
+    if root:
         node_lim = 1  # Node limit for GNN comparison
     else:
         node_lim = -1

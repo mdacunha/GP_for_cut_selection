@@ -53,8 +53,8 @@ if __name__ == "__main__":
     semantic_algo = False
 
     GNN_transformed = True  # Whether to use the transformed version of the problem for comparison with GNN
-
-    if GNN_comparison:
+    root = False
+    if root:
         node_lim = 1  # Node limit for GNN comparison
     else:
         node_lim = -1

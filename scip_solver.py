@@ -13,8 +13,7 @@ import time
 
 from utilities import get_filename
 from conf import *
-from cut_selection_policies import CustomCutSelector
-from basic_cut_selection_policies import HybridLikeCutsel, test
+from cut_selection_policies import CustomCutSelector, test
 from constraintHandler_GP import RepeatSepaConshdlr
 
 from GNN_method.Slurm.train_neural_network import get_standard_solve_data
