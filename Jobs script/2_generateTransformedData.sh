@@ -42,15 +42,14 @@ python Slurm/generate_standard_data.py data/ TransformedSolutions/ TransformedIn
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 echo "removing non accepted instances from GP dataset for comparison on the same dataset"
-python remove_non_accepted_instances.py GNN_method/TransformedInstances/All data/gisp/train data/gisp/test
+python remove_non_accepted_instances.py GNN_method/TransformedInstances/All data/""/train data/""/test
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/GNN_method/
 echo "Generating features"
 python Slurm/generate_feature_vectors.py TransformedInstances/All Features/ TempFiles/GNN/ Outfiles/ 1
 
-cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 echo "Generating training and test sets of the transformed data"
-python GNN_method/generate_test_train_set.py data/gisp/test  GNN_method/TransformedInstances/ 20 'train+test' True
+python generate_test_train_set.py data/""/test  GNN_method/TransformedInstances/ 20 'train+test' True
 
 echo "ended of job at $(date)"
 

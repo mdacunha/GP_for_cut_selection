@@ -47,7 +47,7 @@ if [ -z "$1" ]; then
 fi
 
 ARGUMENT1=$1
-INPUTFILE=$(pwd)/basic_main.py
+INPUTFILE=$(pwd)/main.py
 
 # Lancer le script avec SCOOP
 python -m scoop --hostfile "$HOSTFILE" -n "$SLURM_NTASKS" --python-interpreter="$SCOOP_WRAPPER" "$INPUTFILE" "$ARGUMENT1" None

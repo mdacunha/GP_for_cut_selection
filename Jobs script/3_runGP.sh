@@ -30,7 +30,7 @@ fi
 ARGUMENT1=$1
 
 echo "run GP"
-python main.py "$ARGUMENT1" GNN_method/TransformedSolutions/
+python GNN_main.py "$ARGUMENT1" GNN_method/TransformedSolutions/
 
 echo "Fin du job à $(date)"
 

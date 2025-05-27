@@ -4,8 +4,8 @@
 #SBATCH -c 1
 #SBATCH --time=0-00:05:00
 #SBATCH -p batch
-#SBATCH --output=1_Gen_data_output.out
-#SBATCH --error=1_Gen_data_error.err
+#SBATCH --output=1_Gen_data_basic_output.out
+#SBATCH --error=1_Gen_data_basic_error.err
 
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/
 
@@ -22,12 +22,6 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 
 echo "Generating data"
 python generate_instances.py
-
-directory_path="GNN_method/data/"
-mkdir -p "$directory_path"
-
-echo "Copying data to GNN folder"
-python copy_instances_for_GNN.py data/gisp/train data/gisp/test GNN_method/data/
 
 echo "ended of job at $(date)"
 
