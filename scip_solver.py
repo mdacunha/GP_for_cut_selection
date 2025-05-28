@@ -85,7 +85,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             score = (sd["gap"] - bd) / (abs(sd["gap"]) + 1e-8)
             return model.getNNodes(), score
         return model.getNNodes(), model.getGap()
-    return model.getNNodes(), model.getSolvingTime()
+    return model.getStat('sepatime'), model.getSolvingTime()
 
 
 def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_comp="estimate", node_select="BFS",
