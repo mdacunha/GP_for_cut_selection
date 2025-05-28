@@ -12,7 +12,7 @@ if __name__ == "__main__":
     setparam = 100  # Parameter related to "revenues"
     alphaE2 = 0.5  # Probability of building an edge
 
-    problem = "wpms"
+    problem = "wpsm"
 
     # Graph parameters for GISP problem representation
     min_n = 60  # Minimum number of nodes in the graph

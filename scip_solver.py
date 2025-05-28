@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "GNN_method"))
 
 import pyscipopt
-from pyscipopt import Model, quicksum, Nodesel, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_PARAMSETTING, SCIP_HEURTIMING
+from pyscipopt import Model, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_PARAMSETTING
 import statistics
 from operator import *
 import argparse
@@ -75,6 +75,10 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         model.addSol(sol)
 
     model.optimize()
+
+    stats_file = "scip_stats.txt"
+    model.writeStatistics(stats_file)
+
     if time_limit != 0:
         if fixedcutsel and Test:
             score = 0
@@ -85,7 +89,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             score = (sd["gap"] - bd) / (abs(sd["gap"]) + 1e-8)
             return model.getNNodes(), score
         return model.getNNodes(), model.getGap()
-    return model.getStat('sepatime'), model.getSolvingTime()
+    return model.getNNodes(), model.getSolvingTime()
 
 
 def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_comp="estimate", node_select="BFS",

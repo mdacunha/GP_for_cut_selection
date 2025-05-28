@@ -48,7 +48,7 @@ if __name__ == "__main__":
     #n_test_instances
     initial_pop=1
     nb_of_gen=0
-    seed=0
+    seed="0"
     node_lim=-1
     fitness_size=1
     ############ SMALL PARAM FOR TESTING ###########"""
