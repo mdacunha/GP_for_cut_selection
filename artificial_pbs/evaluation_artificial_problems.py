@@ -66,15 +66,15 @@ def evaluation_gnn_gp(problem, testing_folder, nb_of_test_instances, gp_func_dic
                                                    str(int(fixedcutsel)), str(int(GNN_transformed)), str(node_lim), 
                                                    sol_path, instance, saving_folder],
                 capture_output=True, text=True)
-            print("result for", testing_folder, "GP_function and SCIP : ", result.stdout)
+            print("result for", testing_folder, "GP_function and SCIP : ", result.stdout, flush=True)
 
             if "It is ok for GP_function and the SCIP baseline" not in result.stdout:
                 is_ok = False
-                print("stderr: ", result.stderr)
+                print("stderr: ", result.stderr, flush=True)
 
             if is_ok is True:
                 done+=1
-                print("one is done, with total of ",done)
+                print("one is done, with total of ",done, flush=True)
                 dir = os.path.join(conf.ROOT_DIR,  # - 25
                                    f'{saving_folder}/{problem}/')
                 for one_perf_file in os.listdir(dir):
@@ -89,7 +89,7 @@ def evaluation_gnn_gp(problem, testing_folder, nb_of_test_instances, gp_func_dic
                         evaluation[method][instance] = perfs[list(perfs.keys())[0]]
 
                 if done == nb_of_test_instances:
-                    print("everything is solved")
+                    print("everything is solved", flush=True)
                     print(evaluation)
                     for one_perf_file in os.listdir(dir):
                         if re.match(testing_folder, one_perf_file):

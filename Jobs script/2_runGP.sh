@@ -5,8 +5,8 @@
 #SBATCH --time=0-10:00:00
 #SBATCH -p batch
 ##SBATCH --qos=long
-#SBATCH --output=3_Basic_GP.out
-#SBATCH --error=3_Basic_GP.err
+#SBATCH --output=3_GP.out
+#SBATCH --error=3_GP.err
 
 # Aller dans le répertoire de travail
 cd /mnt/aiongpfs/users/mdacunha/GP_for_cut_selection/ || { echo "Failed to change directory"; exit 1; }
