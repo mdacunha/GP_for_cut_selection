@@ -9,7 +9,7 @@ import subprocess
 import sys
 import os
 import time
-from scoop import futures
+#from scoop import futures
 
 from conf import *
 from scip_solver import perform_SCIP_instance, perform_SCIP_instances_using_a_tuned_comp_policy
@@ -29,7 +29,8 @@ def evaluate(scoring_function):
         ['python', python_path, tree_str, params["problem"], params["training_folder"],
          params["node_select"], str(params["time_limit"]), str(params["seed"]),
          str(params["nb_of_instances"]), str(int(params["fixedcutsel"])),
-         str(params["node_lim"]), params["sol_path"], str(int(params["transformed"]))],
+         str(params["node_lim"]), params["sol_path"], str(int(params["transformed"])), 
+         str(int(params["test"]))],
         capture_output=True, text=True)
     mean_solving_time_or_gap = result.stdout.strip()
 
@@ -49,11 +50,11 @@ def eval_wrapper(individual):
 def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
             training_folder="Train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 
-            fixedcutsel=False, semantic_algo=False, node_lim=-1, sol_path=None, transformed=False):
+            fixedcutsel=False, semantic_algo=False, node_lim=-1, sol_path=None, transformed=False, test=False):
     
     if seed is None:
         seed = math.floor(random.random() * 10000)
-    print("seed:", seed)
+    print("seed:", seed, flush=True)
     random.seed(seed)
         
     pset = gp.PrimitiveSet("main", 8)
@@ -64,7 +65,7 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
     pset.renameArguments(ARG0="getDepth")
     pset.renameArguments(ARG1="getNConss")
     pset.renameArguments(ARG2="getNVars")
-    pset.renameArguments(ARG3="getNNz")
+    pset.renameArguments(ARG3="getNNonz")
     pset.renameArguments(ARG4="getEfficacy")
     pset.renameArguments(ARG5="getCutLPSolCutoffDistance")
     pset.renameArguments(ARG6="getNumIntCols")
@@ -91,14 +92,15 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         "nb_of_instances": nb_of_instances,
         "fixedcutsel": fixedcutsel,
         "node_lim": node_lim,
-        "sol_path": sol_path if sol_path is not None else "",
+        "sol_path": sol_path,
         "transformed": transformed,
+        "test": test
     }
     with open("params.json", "w") as f:
         json.dump(params, f)
 
     toolbox.register("evaluate", eval_wrapper)
-    toolbox.register("map", futures.map)  # Utilisation de scoop
+    toolbox.register("map", map)  # Utilisation de scoop
     toolbox.register("select", tools.selDoubleTournament, fitness_size=fitness_size,
                         parsimony_size=parsimony_size, fitness_first=True)
     toolbox.register("mate", gp.cxOnePoint)

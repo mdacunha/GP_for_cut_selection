@@ -13,13 +13,13 @@ import time
 
 from GNN_method.utilities import get_filename
 from conf import *
-from cut_selection_policies import CustomCutSelector, test
+from cut_selection_policies import FixedAmountCutsel
 from constraintHandler_GP import RepeatSepaConshdlr
 
 from GNN_method.Slurm.train_neural_network import get_standard_solve_data
 
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
-                          time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, Test=False):
+                          time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, test=False):
     model = Model()
     model.hideOutput()
     if fixedcutsel:            
@@ -38,25 +38,23 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         model.setParam('constraints/linear/upgrade/varbound', 0)
     if cut_comp == "SCIP":
         pass
-    elif cut_comp == "Test_SCIP":
-        cut_selector = test()
-        model.includeCutsel(cut_selector, "", "", 536870911)
     else:
         # Create a dummy constraint handler that forces the num_rounds amount of separation rounds
+        num_rounds = 50
+        num_cuts_per_round = 50
         if fixedcutsel:
-            num_rounds = 50
-            num_cuts_per_round = 10
             constraint_handler = RepeatSepaConshdlr(model, num_rounds)
             model.includeConshdlr(constraint_handler, "RepeatSepa", "Forces a certain number of separation rounds",
                                     sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
                                     eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
                                     presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
-            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
+            cut_selector = FixedAmountCutsel(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
             model.includeCutsel(cut_selector, "", "", 536870911)
             model.setParam('separating/maxstallroundsroot', num_rounds)
             model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
         else:
-            cut_selector = CustomCutSelector(comp_policy=cut_comp)
+            #cut_selector = CustomCutSelector(comp_policy=cut_comp)
+            cut_selector = FixedAmountCutsel(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=False)
             model.includeCutsel(cut_selector, "", "", 536870911)
 
     if fixedcutsel:
@@ -76,11 +74,15 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
 
     model.optimize()
 
-    stats_file = "scip_stats.txt"
-    model.writeStatistics(stats_file)
+    if not os.path.exists("gp_stats.txt") and cut_comp != "SCIP" and is_Test:
+        stats_file = "gp_stats.txt"
+        model.writeStatistics(stats_file)
+    if not os.path.exists("scip_stats.txt") and cut_comp == "SCIP" and is_Test:
+        stats_file = "scip_stats.txt"
+        model.writeStatistics(stats_file)
 
     if time_limit != 0:
-        if fixedcutsel and Test:
+        if fixedcutsel and is_Test:
             score = 0
             root_path = os.path.join(ROOT_DIR, "GNN_method", "RootResults/")
             standard_solve_data = get_standard_solve_data(root_path, root=True)
@@ -100,7 +102,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                      node_lim=-1,
                                                      time_limit=None,
                                                      instances_indexes=None,
-                                                     sol_path=None):  # comp policy is either a str LB or estimate of a function
+                                                     sol_path=None,
+                                                     test=False):  
     sol_times = []
     nnodes = []
     nb_done = 0
@@ -114,7 +117,7 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                 visited_nodes, time_or_gap = perform_SCIP_instance(instance_path, cut_comp, node_select,
                                                                    parameter_settings=parameter_settings,
                                                                    time_limit=time_limit, fixedcutsel=fixedcutsel, 
-                                                                   node_lim=node_lim, sol_path=sol_path)
+                                                                   node_lim=node_lim, sol_path=sol_path, test=test)
                 sol_times.append(time_or_gap)
                 nnodes.append(visited_nodes)
                 nb_done += 1

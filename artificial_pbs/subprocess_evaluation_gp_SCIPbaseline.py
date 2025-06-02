@@ -40,7 +40,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
             nb_nodes,time = perform_SCIP_instance(instance_path, cut_comp=comp_policy, node_select=sel_policy,
                                                    parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
-                                                   Test=True)
+                                                   is_Test=True)
 
             perfs[instance[:len(instance) - 3]] = [nb_nodes, time]
 

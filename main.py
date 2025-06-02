@@ -43,6 +43,8 @@ if __name__ == "__main__":
         node_lim = 1  # Node limit for GNN comparison
     else:
         node_lim = -1
+
+    SCIP_func_test = False  # Whether to test the SCIP function
     
     """########### SMALL PARAM FOR TESTING ###########
     #n_test_instances
@@ -70,6 +72,12 @@ if __name__ == "__main__":
     # Construct a unique name for the run
     name = f"{problem}_pop_{initial_pop}_nb_gen{nb_of_gen}_seed_{seed}"
     # Run the GP_function training
+
+    if os.path.exists("gp_stats.txt"):
+        os.remove("gp_stats.txt")
+    if os.path.exists("scip_stats.txt"):
+        os.remove("scip_stats.txt")
+
     main_GP(
         problem=problem,
         initial_pop=initial_pop,
@@ -88,7 +96,8 @@ if __name__ == "__main__":
         fixedcutsel=GNN_comparison,
         node_lim=node_lim,
         sol_path=sol_path,
-        transformed=GNN_transformed
+        transformed=GNN_transformed,
+        test=SCIP_func_test
     ) 
 
     # Evaluate the convergence of GP across generations

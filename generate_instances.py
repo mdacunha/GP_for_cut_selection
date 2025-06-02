@@ -15,15 +15,15 @@ if __name__ == "__main__":
     problem = "wpsm"
 
     # Graph parameters for GISP problem representation
-    min_n = 60  # Minimum number of nodes in the graph
-    max_n = 70  # Maximum number of nodes in the graph
+    min_n = 120  # Minimum number of nodes in the graph
+    max_n = 140  # Maximum number of nodes in the graph
     er_prob = 0.6  # Erdos-Rényi random graph parameter
 
     """########### SMALL PARAM FOR TESTING ###########
-    n=4
-    n_test=4
-    min_n=30
-    max_n=40
+    n=1
+    n_test=3
+    min_n=60
+    max_n=70
     ########### SMALL PARAM FOR TESTING ###########"""
 
     training_file = f"data/{problem}/train"
@@ -36,8 +36,7 @@ if __name__ == "__main__":
             shutil.rmtree(lp_dir_training)  # Recursively removes a directory and all its contents
         except Exception as e:
             print(f"Error cleaning {lp_dir_training}: {e}")
-    else:
-        os.makedirs(lp_dir_training)
+    os.makedirs(lp_dir_training)
 
     # Generate training instances
     #generate_instances(n, whichSet, setparam, alphaE2, min_n, max_n, er_prob, None, lp_dir_training, False) #GISP
@@ -55,9 +54,8 @@ if __name__ == "__main__":
             shutil.rmtree(lp_dir_test)  # Recursively removes a directory and all its contents
         except Exception as e:
             print(f"Error cleaning {lp_dir_test}: {e}")
-    else:
-        os.makedirs(lp_dir_test)
+    os.makedirs(lp_dir_test)
 
     # Generate test instances"
     #generate_instances(n, whichSet, setparam, alphaE2, min_n, max_n, er_prob, None, lp_dir_test, False) #GISP
-    generate_instances(n, min_n, max_n, lp_dir_test, False, er_prob) #WPMS
+    generate_instances(n_test, min_n, max_n, lp_dir_test, False, er_prob) #WPMS

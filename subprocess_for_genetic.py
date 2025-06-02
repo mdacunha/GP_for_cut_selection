@@ -18,9 +18,11 @@ if __name__ == "__main__":
     parser.add_argument('node_lim', type=int, help='node_lim')
     parser.add_argument('sol_path', type=str, help='sol_path')
     parser.add_argument('transformed', type=int, help='0 ou 1, tranformed')
+    parser.add_argument('test', type=int, help='test mode for SCIP')
     args = parser.parse_args()
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
+    test = bool(args.test)
     if args.problem in ["gisp", "basic_gisp", "basic_wpsm", "wpsm", "fcmcnf"]:
         if transformed:
             lp_dir = os.path.join(os.path.dirname(__file__), f"GNN_method/TransformedInstances/{args.training_folder}/")
@@ -29,7 +31,7 @@ if __name__ == "__main__":
         meannnodes, mean_val = scip_solver.perform_SCIP_instances_using_a_tuned_comp_policy(
             instances_folder=lp_dir,
             cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
-            node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path)
+            node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path, test=test)
         print(mean_val)
     else:
         random.seed(args.seed)
