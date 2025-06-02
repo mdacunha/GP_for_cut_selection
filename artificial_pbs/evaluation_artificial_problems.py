@@ -12,7 +12,8 @@ import data.build_instances
 
 def evaluation_gnn_gp(problem, testing_folder, nb_of_test_instances, gp_func_dic, time_limit=None, 
                         fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, 
-                        do_gnn=True, build_set_of_instances=True,saving_folder="simulation_outcomes"):
+                        do_gnn=True, build_set_of_instances=True,saving_folder="simulation_outcomes",
+                        num_cuts_per_round=10):
     nb_of_built_instances = 100
     json_gp_func_dic = json.dumps(gp_func_dic)
     is_ok = False
@@ -64,7 +65,7 @@ def evaluation_gnn_gp(problem, testing_folder, nb_of_test_instances, gp_func_dic
             result = subprocess.run(
                 ['python', GP_and_SCIP, problem, testing_folder, json_gp_func_dic, str(time_limit), 
                                                    str(int(fixedcutsel)), str(int(GNN_transformed)), str(node_lim), 
-                                                   sol_path, instance, saving_folder],
+                                                   sol_path, instance, saving_folder, num_cuts_per_round],
                 capture_output=True, text=True)
             print("result for", testing_folder, "GP_function and SCIP : ", result.stdout, flush=True)
 

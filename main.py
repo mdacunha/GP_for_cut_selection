@@ -22,6 +22,7 @@ if __name__ == "__main__":
     mate = 0.9  # Crossover rate
     mutate = 0.1  # Mutation rate
     nb_of_gen = 25  # Number of generations
+    num_cuts_per_round = 10
     seed = args.seed  # Random seed
     sol_path = args.sol_path  # Path to the solution file
 
@@ -97,7 +98,8 @@ if __name__ == "__main__":
         node_lim=node_lim,
         sol_path=sol_path,
         transformed=GNN_transformed,
-        test=SCIP_func_test
+        test=SCIP_func_test,
+        num_cuts_per_round=num_cuts_per_round
     ) 
 
     # Evaluate the convergence of GP across generations
@@ -107,7 +109,8 @@ if __name__ == "__main__":
     print(gp_function, flush=True)
     evaluation_gnn_gp(problem, testing_folder, n_test_instances, gp_func_dic, time_limit=time_limit, 
                         fixedcutsel=GNN_comparison, GNN_transformed=GNN_transformed, node_lim=node_lim, 
-                        sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder)
+                        sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder,
+                        num_cuts_per_round=num_cuts_per_round)
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=[problem], partitions=[testing_folder], saving_folder=simulation_folder)
