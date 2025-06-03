@@ -46,6 +46,7 @@ if __name__ == "__main__":
         node_lim = -1
 
     SCIP_func_test = False  # Whether to test the SCIP function
+    parallel = True  # Whether to run in parallel for slurm on HPC
     
     """########### SMALL PARAM FOR TESTING ###########
     #n_test_instances
@@ -99,7 +100,8 @@ if __name__ == "__main__":
         sol_path=sol_path,
         transformed=GNN_transformed,
         test=SCIP_func_test,
-        num_cuts_per_round=num_cuts_per_round
+        num_cuts_per_round=num_cuts_per_round,
+        parallel=parallel
     ) 
 
     # Evaluate the convergence of GP across generations

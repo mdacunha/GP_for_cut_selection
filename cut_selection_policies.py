@@ -183,7 +183,7 @@ class FixedAmountCutsel(Cutsel):
                 score = (
                     efficacy_weight * context['getEfficacy'] + 
                     objparal_weight * context['getObjParallelism'] +
-                    intsupport_weight * context['getNumIntCols'] / context['getNNz'] +
+                    intsupport_weight * context['getNumIntCols'] / context['getNNonz'] +
                     dircutoffdist_weight * max(context['getEfficacy'], context['getCutLPSolCutoffDistance'])
                 )
     

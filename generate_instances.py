@@ -15,8 +15,8 @@ if __name__ == "__main__":
     problem = "wpsm"
 
     # Graph parameters for GISP problem representation
-    min_n = 120  # Minimum number of nodes in the graph
-    max_n = 140  # Maximum number of nodes in the graph
+    min_n = 60  # Minimum number of nodes in the graph
+    max_n = 70  # Maximum number of nodes in the graph
     er_prob = 0.6  # Erdos-Rényi random graph parameter
 
     """########### SMALL PARAM FOR TESTING ###########
