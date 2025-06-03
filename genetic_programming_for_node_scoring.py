@@ -9,19 +9,20 @@ import subprocess
 import sys
 import os
 import time
+from functools import partial
 
 from conf import *
 from scip_solver import perform_SCIP_instance, perform_SCIP_instances_using_a_tuned_comp_policy
 
 # Variables globales pour paramètres d'évaluation
 
-def evaluate(scoring_function):
+def evaluate(scoring_function, params):
 
     tree_str = str(scoring_function)
     #print(tree_str, flush=True)
     
-    with open("params.json", "r") as f:
-        params = json.load(f)
+    """with open(f"params.json", "r") as f:
+        params = json.load(f)"""
     
     python_path = os.path.join(os.path.dirname(__file__), "subprocess_for_genetic.py")
     result = subprocess.run(
@@ -97,10 +98,13 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         "test": test,
         "num_cuts_per_round": num_cuts_per_round
     }
-    with open("params.json", "w") as f:
-        json.dump(params, f)
+    """with open("params.json", "w") as f:
+        json.dump(params, f)"""
 
-    toolbox.register("evaluate", eval_wrapper)
+    evaluate_with_params = partial(evaluate, params=params)
+
+    toolbox.register("evaluate", evaluate_with_params)
+
     if parallel:
         from scoop import futures
         toolbox.register("map", futures.map)  # Utilisation de scoop

@@ -1,7 +1,7 @@
 import argparse
 import os
 
-import data.build_gisp_instances, data.build_fcmcnf_instances, data.build_wpms_instances
+import data.build_gisp_instances, data.build_fcmcnf_instances, data.build_wpsm_instances
 
 def build_new_set_of_instances(problem,partition,nb_of_instances=50):
     n= nb_of_instances
@@ -56,7 +56,7 @@ def build_new_set_of_instances(problem,partition,nb_of_instances=50):
         lp_dir = os.path.join(os.path.dirname(__file__), exp_dir + partition + '/')
         if not os.path.exists(lp_dir):
             os.makedirs(lp_dir)
-        data.build_wpms_instances.generate_instances(n, min_n, max_n, lp_dir, False, er_prob)
+        data.build_wpsm_instances.generate_instances(n, min_n, max_n, lp_dir, False, er_prob)
     else:
         print("ERROR, problem: ",problem)
 

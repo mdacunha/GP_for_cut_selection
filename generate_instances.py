@@ -1,7 +1,7 @@
 import os
 import shutil
 import conf
-from data.build_wpms_instances import *
+from data.build_wpsm_instances import *
 
 if __name__ == "__main__":
     # Note: The construction of the instance reuses the code by Labassi et al. on Graph Neural Networks.

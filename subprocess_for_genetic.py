@@ -24,7 +24,7 @@ if __name__ == "__main__":
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
     test = bool(args.test)
-    if args.problem in ["gisp", "basic_gisp", "basic_wpsm", "wpsm", "fcmcnf"]:
+    if args.problem in ["gisp", "wpsm", "fcmcnf"]:
         if transformed:
             lp_dir = os.path.join(os.path.dirname(__file__), f"GNN_method/TransformedInstances/{args.training_folder}/")
         else:

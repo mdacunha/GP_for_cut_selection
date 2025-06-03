@@ -10,13 +10,15 @@ from artificial_pbs.build_tables_artificial_pb_perfs import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('seed', type=str, help="Seed that we choose")
+    parser.add_argument('problem', type=str, help="problem")
     parser.add_argument('num_cuts_per_round', type=str, help="num_cuts_per_round")
+    parser.add_argument('seed', type=str, help="Seed that we choose")
+
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
     # Parameters for GP_function training
-    problem = "wpsm"  # Problem type
+    problem = args.problem  # Problem type
     training_folder = "train"
     testing_folder= "test"
     initial_pop = 50  # Population size for tree-based heuristics
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     
     n_test_instances = len(fichiers)  
 
-    simulation_folder = os.path.join(conf.ROOT_DIR, problem + "__seed__" + seed)
+    simulation_folder = os.path.join(conf.ROOT_DIR, "__pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
     if not os.path.exists(simulation_folder):
         os.makedirs(simulation_folder)
     function_folder = os.path.join(simulation_folder, "GP_function")
