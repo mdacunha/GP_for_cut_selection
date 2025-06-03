@@ -76,10 +76,10 @@ if __name__ == "__main__":
     name = f"{problem}_pop_{initial_pop}_nb_gen{nb_of_gen}_seed_{seed}"
     # Run the GP_function training
 
-    if os.path.exists("gp_stats.txt"):
-        os.remove("gp_stats.txt")
-    if os.path.exists("scip_stats.txt"):
-        os.remove("scip_stats.txt")
+    if os.path.exists(f"gp_stats_{num_cuts_per_round}.txt"):
+        os.remove(f"gp_stats_{num_cuts_per_round}.txt")
+    if os.path.exists(f"scip_stats_{num_cuts_per_round}.txt"):
+        os.remove(f"scip_stats_{num_cuts_per_round}.txt")
 
     main_GP(
         problem=problem,

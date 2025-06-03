@@ -74,11 +74,11 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
 
     model.optimize()
 
-    if not os.path.exists("gp_stats.txt") and cut_comp != "SCIP" and is_Test:
-        stats_file = "gp_stats.txt"
+    if not os.path.exists(f"gp_stats_{num_cuts_per_round}.txt") and cut_comp != "SCIP" and is_Test:
+        stats_file = f"gp_stats_{num_cuts_per_round}.txt"
         model.writeStatistics(stats_file)
-    if not os.path.exists("scip_stats.txt") and cut_comp == "SCIP" and is_Test:
-        stats_file = "scip_stats.txt"
+    if not os.path.exists(f"scip_stats_{num_cuts_per_round}.txt") and cut_comp == "SCIP" and is_Test:
+        stats_file = f"scip_stats_{num_cuts_per_round}.txt"
         model.writeStatistics(stats_file)
 
     if time_limit != 0:
