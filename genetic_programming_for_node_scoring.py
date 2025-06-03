@@ -29,7 +29,7 @@ def evaluate(scoring_function):
          params["node_select"], str(params["time_limit"]), str(params["seed"]),
          str(params["nb_of_instances"]), str(int(params["fixedcutsel"])),
          str(params["node_lim"]), params["sol_path"], str(int(params["transformed"])), 
-         str(int(params["test"]))],
+         str(int(params["test"])), str(params["num_cuts_per_round"])],
         capture_output=True, text=True)
     mean_solving_time_or_gap = result.stdout.strip()
 
@@ -94,7 +94,8 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         "node_lim": node_lim,
         "sol_path": sol_path,
         "transformed": transformed,
-        "test": test
+        "test": test,
+        "num_cuts_per_round": num_cuts_per_round
     }
     with open("params.json", "w") as f:
         json.dump(params, f)

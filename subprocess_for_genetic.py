@@ -19,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument('sol_path', type=str, help='sol_path')
     parser.add_argument('transformed', type=int, help='0 ou 1, tranformed')
     parser.add_argument('test', type=int, help='test mode for SCIP')
+    parser.add_argument('num_cuts_per_round', type=int, help='number of cuts per round')
     args = parser.parse_args()
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
@@ -31,7 +32,7 @@ if __name__ == "__main__":
         meannnodes, mean_val = scip_solver.perform_SCIP_instances_using_a_tuned_comp_policy(
             instances_folder=lp_dir,
             cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
-            node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path, test=test)
+            node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path, test=test, num_cuts_per_round=args.num_cuts_per_round)
         print(mean_val)
     else:
         random.seed(args.seed)

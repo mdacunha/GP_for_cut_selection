@@ -11,6 +11,7 @@ from artificial_pbs.build_tables_artificial_pb_perfs import *
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('seed', type=str, help="Seed that we choose")
+    parser.add_argument('num_cuts_per_round', type=str, help="num_cuts_per_round")
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
@@ -22,7 +23,7 @@ if __name__ == "__main__":
     mate = 0.9  # Crossover rate
     mutate = 0.1  # Mutation rate
     nb_of_gen = 25  # Number of generations
-    num_cuts_per_round = 10
+    num_cuts_per_round = args.num_cuts_per_round
     seed = args.seed  # Random seed
     sol_path = args.sol_path  # Path to the solution file
 

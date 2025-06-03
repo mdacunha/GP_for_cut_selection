@@ -41,16 +41,17 @@ echo "Répertoire de soumission : ${SLURM_SUBMIT_DIR}"
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
 # Vérification des arguments
-if [ -z "$1" ]; then
+if [ -z "$1" "$2"]; then
   echo "Arguments non fournis. Utilisation : sbatch run_gp_scoop.sh <argument>"
   exit 1
 fi
 
 ARGUMENT1=$1
+ARGUMENT2=$2
 INPUTFILE=$(pwd)/main.py
 
 # Lancer le script avec SCOOP
-python -m scoop --hostfile "$HOSTFILE" -n "$SLURM_NTASKS" --python-interpreter="$SCOOP_WRAPPER" "$INPUTFILE" "$ARGUMENT1" None
+python -m scoop --hostfile "$HOSTFILE" -n "$SLURM_NTASKS" --python-interpreter="$SCOOP_WRAPPER" "$INPUTFILE" "$ARGUMENT1" "$ARGUMENT2" None
 
 echo "Fin du job à $(date)"
 

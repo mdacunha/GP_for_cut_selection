@@ -57,8 +57,13 @@ class FixedAmountCutsel(Cutsel):
         n_cuts = len(cuts)
         nselectedcuts = 0
 
+        if root:
+            k=4
+        else:
+            k=1
+            
         # Get the number of cuts that we will select this round.
-        num_cuts_to_select = min(maxnselectedcuts, max(self.num_cuts_per_round - len(forcedcuts), 0), n_cuts)
+        num_cuts_to_select = min(maxnselectedcuts, max(k * self.num_cuts_per_round - len(forcedcuts), 0), n_cuts)
 
         # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
         # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
