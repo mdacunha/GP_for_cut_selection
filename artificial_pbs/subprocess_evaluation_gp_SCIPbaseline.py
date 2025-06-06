@@ -15,7 +15,7 @@ from conf import *
 def evaluate_a_function_and_store_it(problem, function, performance_folder, saving_folder,
                                      testing_folder, parameter_settings=False, time_limit=0, 
                                         fixedcutsel=False, node_lim=-1, sol_path=None, func_name=None,
-                                        instances=[], num_cuts_per_round=10):
+                                        instances=[], num_cuts_per_round=10, RL=False, get_scores=False):
     if function == "best_estimate_BFS":
         comp_policy = "estimate"
         sel_policy = 'BFS'
@@ -41,7 +41,8 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
             nb_nodes,time = perform_SCIP_instance(instance_path, cut_comp=comp_policy, node_select=sel_policy,
                                                    parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
-                                                   is_Test=True, num_cuts_per_round=num_cuts_per_round)
+                                                   is_Test=True, num_cuts_per_round=num_cuts_per_round, 
+                                                   RL=RL, get_scores=get_scores)
 
             perfs[instance[:len(instance) - 3]] = [nb_nodes, time]
 
@@ -64,7 +65,7 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, testing_folder="test"
                                                    fixedcutsel=False, GNN_transformed=False, 
                                                    node_lim=-1, sol_path=None, instances=[], 
                                                    saving_folder="simulation_outcomes",
-                                                   num_cuts_per_round=10):
+                                                   num_cuts_per_round=10, RL=False, get_scores=False):
     if GNN_transformed:
         folder = f"GNN_method/TransformedInstances/{testing_folder}"
     else:
@@ -75,7 +76,7 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, testing_folder="test"
                                              parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    func_name="GP_parsimony_parameter_"+str(key), instances=instances,
-                                                   num_cuts_per_round=num_cuts_per_round)
+                                                   num_cuts_per_round=num_cuts_per_round, RL=RL, get_scores=get_scores)
 
 
     functions = ["SCIP"]#"best_estimate_BFS","best_estimate_DFS","best_LB_BFS"]
@@ -98,6 +99,8 @@ if __name__ == "__main__":
     parser.add_argument('instance', type=str, help='instance')
     parser.add_argument('saving_folder', type=str, help='saving_folder')
     parser.add_argument('num_cuts_per_round', type=int, help='num_cuts_per_round')
+    parser.add_argument('RL', type=int, help='RL')
+    parser.add_argument('get_scores', type=int, help='get_scores')
     args = parser.parse_args()
     problem = args.problem
     testing_folder = args.testing_folder
@@ -111,5 +114,5 @@ if __name__ == "__main__":
                                                   time_limit=args.time_limit, fixedcutsel=fixedcutsel, 
                                                   GNN_transformed=GNN_transformed, node_lim=args.node_lim, 
                                                   sol_path=args.sol_path, instances=[instance], saving_folder=args.saving_folder, 
-                                                  num_cuts_per_round=args.num_cuts_per_round)
+                                                  num_cuts_per_round=args.num_cuts_per_round, RL=args.RL, get_scores=args.get_scores)
     print("It is ok for GP_function and the SCIP baseline")

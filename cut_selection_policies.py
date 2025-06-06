@@ -5,7 +5,9 @@ import math
 from operator import *
 import re
 import numpy as np
-
+import os
+import json
+from filelock import FileLock
 
 
 def protectedDiv(left, right):
@@ -23,8 +25,8 @@ operations = {
 
 class CustomCutSelector(Cutsel):
 
-    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, min_orthogonality_root=0.9,
-                 min_orthogonality=0.9):
+    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, get_scores=False, 
+                 min_orthogonality_root=0.9, min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
         self.num_cuts_per_round = num_cuts_per_round
@@ -32,6 +34,7 @@ class CustomCutSelector(Cutsel):
         self.min_orthogonality = min_orthogonality
         self.test = test
         self.RL = RL
+        self.get_scores = get_scores
         random.seed(42)
 
     def copy(self):
@@ -85,7 +88,10 @@ class CustomCutSelector(Cutsel):
 
         # Generate the scores of each cut and thereby the maximum score
         # max_forced_score, forced_scores = self.scoring(forcedcuts)
-        max_non_forced_score, scores = self.scoring(cuts, self.test)            
+        max_non_forced_score, scores = self.scoring(cuts, self.test)       
+
+        if self.get_scores:
+            self.ajouter_donnee_json("scores.json", num_cuts_to_select, scores)
 
         good_score = max_non_forced_score
 
@@ -349,6 +355,34 @@ class CustomCutSelector(Cutsel):
         scores[nselectedcuts], scores[best_pos] = scores[best_pos], scores[nselectedcuts]
         return cuts, scores
     
+    def ajouter_donnee_json(fichier, cle, valeurs):
+        valeurs_triees = sorted(valeurs, reverse=True)
+        nouvelle_entree = {str(cle): valeurs_triees}
+
+        # Fichier de verrouillage
+        lock_path = fichier + ".lock"
+        lock = FileLock(lock_path)
+
+        with lock:  # Section critique protégée
+            # Charger les données existantes si le fichier existe
+            if os.path.exists(fichier):
+                with open(fichier, "r") as f:
+                    try:
+                        data = json.load(f)
+                        if not isinstance(data, list):
+                            raise ValueError("Le fichier JSON doit contenir une liste.")
+                    except json.JSONDecodeError:
+                        data = []  # Fichier vide ou corrompu, on repart à zéro
+            else:
+                data = []
+
+            # Ajouter la nouvelle entrée
+            data.append(nouvelle_entree)
+
+            # Écrire le tout dans le fichier
+            with open(fichier, "w") as f:
+                json.dump(data, f, indent=4)
+
 """class CustomCutSelector(Cutsel):
     
     def __init__(

@@ -68,7 +68,10 @@ def find(df, pb, nb_cuts, seed):
 
     return df[(df['problem'] == pb) & (df['nb_cuts'] == nb_cuts) & (df['seed'] == seed)]
 
-def plot_evolution_with_point(df, folder, mean=True, median=False, points=True, show=False, save=False):
+def plot_evolution_with_point(df, folder, lowbound=-np.inf, mean=True, median=False, points=True, show=False, save=False):
+
+    df = df[df["score"] >= lowbound]
+
     plt.figure(figsize=(10, 6))
     problems = sorted(df["problem"].unique())
     palette = sns.color_palette("Set1", n_colors=len(problems))
@@ -107,7 +110,10 @@ def plot_evolution_with_point(df, folder, mean=True, median=False, points=True, 
     plt.xticks(cut_values)
     plt.tight_layout()
     if save:
-        plt.savefig(os.path.join(folder, "mean_evolution_with_points.png"))
+        if lowbound == -np.inf:
+            plt.savefig(os.path.join(folder, "mean_evolution_with_points.png"))
+        else:
+            plt.savefig(os.path.join(folder, f"mean_evolution_with_points_{lowbound}.png"))
     if show:
         plt.show()
     else:
@@ -133,7 +139,7 @@ if __name__ == "__main__":
 
     # Use :
 
-    plot_evolution_with_point(df_result, folder, mean=True, median=False, points=True, show=True, save=True)
+    plot_evolution_with_point(df_result, folder, lowbound=-0.2, mean=True, median=False, points=True, show=True, save=True)
 
 
     #print(df_result.to_string(index=False))
