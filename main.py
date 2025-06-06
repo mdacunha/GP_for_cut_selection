@@ -14,9 +14,13 @@ if __name__ == "__main__":
     parser.add_argument('num_cuts_per_round', type=str, help="num_cuts_per_round")
     parser.add_argument('seed', type=str, help="Seed that we choose")
 
+    # side quests : 
+    parser.add_argument('GP_function_test', type=str, help="Testing folder")
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
     
+
+
     # Parameters for GP_function training
     problem = args.problem  # Problem type
     training_folder = "train"
@@ -110,7 +114,7 @@ if __name__ == "__main__":
 
     # Evaluate the convergence of GP across generations
     gp_function = convergence_of_gp_over_generations(simulation_folder,saving=False, show=False)
-
+    gp_function = gp_function if args.GP_function_test == "None" else args.GP_function_test
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
     #print(gp_function, flush=True)
     evaluation_gnn_gp(problem, testing_folder, n_test_instances, gp_func_dic, time_limit=time_limit, 
