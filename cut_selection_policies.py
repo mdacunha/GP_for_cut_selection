@@ -4,6 +4,8 @@ import random
 import math
 from operator import *
 import re
+import numpy as np
+
 
 
 def protectedDiv(left, right):
@@ -19,9 +21,9 @@ operations = {
     'protectedDiv': protectedDiv
 }
 
-class FixedAmountCutsel(Cutsel):
+class CustomCutSelector(Cutsel):
 
-    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, min_orthogonality_root=0.9,
+    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, min_orthogonality_root=0.9,
                  min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
@@ -29,10 +31,11 @@ class FixedAmountCutsel(Cutsel):
         self.min_orthogonality_root = min_orthogonality_root
         self.min_orthogonality = min_orthogonality
         self.test = test
+        self.RL = RL
         random.seed(42)
 
     def copy(self):
-        return FixedAmountCutsel(self.comp_policy, self.num_cuts_per_round)
+        return CustomCutSelector(self.comp_policy, self.num_cuts_per_round, self.test, self.RL)
     
     def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
         """
@@ -61,9 +64,15 @@ class FixedAmountCutsel(Cutsel):
             k=4
         else:
             k=1
+
+        if self.RL:
+            k = 1
+            #num_cut = 
+        else:
+            num_cut = self.num_cuts_per_round
             
         # Get the number of cuts that we will select this round.
-        num_cuts_to_select = min(maxnselectedcuts, max(k * self.num_cuts_per_round - len(forcedcuts), 0), n_cuts)
+        num_cuts_to_select = min(maxnselectedcuts, max(k * num_cut - len(forcedcuts), 0), n_cuts)
 
         # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
         # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
@@ -146,6 +155,67 @@ class FixedAmountCutsel(Cutsel):
                     return float(expr)
                 except ValueError:
                     return context[expr]
+                
+        def compute_cut_violation(model, row):
+            # Récupérer les variables et les coefficients (α)
+            cols = row.getCols()  # Récupère les colonnes associées à la ligne
+            vals = row.getVals()  # Récupère les coefficients correspondants
+
+            # Extraire les variables des colonnes
+            vars_in_cut = [col.getVar() for col in cols]
+
+            # Calcul de αᵗ x* (solution LP)
+            alphaTx = sum(model.getSolVal(None, var) * val for var, val in zip(vars_in_cut, vals))
+
+            # Identifier le sens de l'inégalité et β
+            lhs = row.getLhs()
+            rhs = row.getRhs()
+
+            if lhs == -model.infinity():
+                # αᵗ x ≤ β
+                beta = rhs
+            elif rhs == model.infinity():
+                # αᵗ x ≥ β
+                beta = lhs
+            else:
+                # αᵗ x = β
+                beta = lhs  # ou rhs
+
+            # Calcul de la violation pondérée
+            violation = (alphaTx - beta)/abs(beta) if beta != 0 else alphaTx
+            score = max(0.0, violation)
+
+            return score
+
+        def get_cut_coeff_stats(row):
+
+            coefs = row.getVals()
+
+            # Si pas de coefficients trouvés
+            if not coefs:
+                return {'mean': 0.0, 'max': 0.0, 'min': 0.0, 'std': 0.0}
+
+            stats = {
+                'mean': np.mean(coefs),
+                'max': np.max(coefs),
+                'min': np.min(coefs),
+                'std': np.std(coefs),
+            }
+            return stats
+        
+        def get_obj_coeff_stats(model):
+            vars = model.getVars()
+            coefs = [var.getObj() for var in vars]
+
+
+            stats = {
+                'mean': np.mean(coefs),
+                'max': np.max(coefs),
+                'min': np.min(coefs),
+                'std': np.std(coefs),
+            }
+            return stats
+
                     
         scores = [0] * len(cuts)
         max_score = 0.0
@@ -163,16 +233,27 @@ class FixedAmountCutsel(Cutsel):
                 print("Cutsel: Cut does not have a cutoff distance, using 0.0")
     
             # Cycle over all cuts and score them
+
+            
     
             context = {
                     'getDepth': self.model.getDepth(),
-                    'getNumIntCols': self.model.getRowNumIntCols(cut),
                     'getNConss': getNConss,
                     'getNVars': getNVars,
                     'getNNonz': cut.getNNonz(),
                     'getEfficacy': self.model.getCutEfficacy(cut),
+                    'getNumIntCols': self.model.getRowNumIntCols(cut),
                     'getCutLPSolCutoffDistance': cutoffdist,
                     'getObjParallelism': self.model.getRowObjParallelism(cut),
+                    'getCutViolation': compute_cut_violation(self.model, cut),
+                    'mean_cut_values' : get_cut_coeff_stats(cut)['mean'],
+                    'max_cut_values' : get_cut_coeff_stats(cut)['max'],
+                    'min_cut_values' : get_cut_coeff_stats(cut)['min'],
+                    'std_cut_values' : get_cut_coeff_stats(cut)['std'],
+                    'mean_obj_values' : get_obj_coeff_stats(self.model)['mean'],
+                    'max_obj_values' : get_obj_coeff_stats(self.model)['max'],
+                    'min_obj_values' : get_obj_coeff_stats(self.model)['min'],
+                    'std_obj_values' : get_obj_coeff_stats(self.model)['std'],
                     "10000000":10000000
                 }
                     

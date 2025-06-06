@@ -21,10 +21,10 @@ if __name__ == "__main__":
     problem = args.problem  # Problem type
     training_folder = "train"
     testing_folder= "test"
-    initial_pop = 50  # Population size for tree-based heuristics
+    initial_pop = 127  # Population size for tree-based heuristics
     mate = 0.9  # Crossover rate
     mutate = 0.1  # Mutation rate
-    nb_of_gen = 25  # Number of generations
+    nb_of_gen = 40  # Number of generations
     num_cuts_per_round = args.num_cuts_per_round
     seed = args.seed  # Random seed
     sol_path = args.sol_path  # Path to the solution file
@@ -39,9 +39,7 @@ if __name__ == "__main__":
 
     # Environment parametrisation for SCIP solving
     GNN_comparison = False
-    #semantic_algo = False
-
-    GNN_transformed = False  # Whether to use the transformed version of the problem for comparison with GNN
+    transformed = False  # Whether to use the transformed version of the problem for comparison with GNN
     root = False
     if root:
         node_lim = 1  # Node limit for GNN comparison
@@ -50,6 +48,7 @@ if __name__ == "__main__":
 
     SCIP_func_test = False  # Whether to test the SCIP function
     parallel = True  # Whether to run in parallel for slurm on HPC
+    RL = False
     
     """########### SMALL PARAM FOR TESTING ###########
     #n_test_instances
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     
     n_test_instances = len(fichiers)  
 
-    simulation_folder = os.path.join(conf.ROOT_DIR, "__pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
+    simulation_folder = os.path.join(conf.ROOT_DIR, "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
     if not os.path.exists(simulation_folder):
         os.makedirs(simulation_folder)
     function_folder = os.path.join(simulation_folder, "GP_function")
@@ -101,21 +100,22 @@ if __name__ == "__main__":
         fixedcutsel=GNN_comparison,
         node_lim=node_lim,
         sol_path=sol_path,
-        transformed=GNN_transformed,
+        transformed=transformed,
         test=SCIP_func_test,
         num_cuts_per_round=num_cuts_per_round,
-        parallel=parallel
+        parallel=parallel,
+        RL=RL
     ) 
 
     # Evaluate the convergence of GP across generations
     gp_function = convergence_of_gp_over_generations(simulation_folder,saving=False, show=False)
 
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
-    print(gp_function, flush=True)
+    #print(gp_function, flush=True)
     evaluation_gnn_gp(problem, testing_folder, n_test_instances, gp_func_dic, time_limit=time_limit, 
-                        fixedcutsel=GNN_comparison, GNN_transformed=GNN_transformed, node_lim=node_lim, 
+                        fixedcutsel=GNN_comparison, GNN_transformed=transformed, node_lim=node_lim, 
                         sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder,
-                        num_cuts_per_round=num_cuts_per_round)
+                        num_cuts_per_round=num_cuts_per_round, RL=RL)
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=[problem], partitions=[testing_folder], saving_folder=simulation_folder)

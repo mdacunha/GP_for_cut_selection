@@ -13,14 +13,14 @@ import time
 
 from GNN_method.utilities import get_filename
 from conf import *
-from cut_selection_policies import FixedAmountCutsel
+from cut_selection_policies import CustomCutSelector
 from constraintHandler_GP import RepeatSepaConshdlr
 
 from GNN_method.Slurm.train_neural_network import get_standard_solve_data
 
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, test=False, 
-                          num_cuts_per_round=10):
+                          num_cuts_per_round=10, RL=False):
     model = Model()
     model.hideOutput()
     if fixedcutsel:            
@@ -48,13 +48,13 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
                                     sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
                                     eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
                                     presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
-            cut_selector = FixedAmountCutsel(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round)
+            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL)
             model.includeCutsel(cut_selector, "", "", 536870911)
             model.setParam('separating/maxstallroundsroot', num_rounds)
             model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
         else:
             #cut_selector = CustomCutSelector(comp_policy=cut_comp)
-            cut_selector = FixedAmountCutsel(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test)
+            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL)
             model.includeCutsel(cut_selector, "", "", 536870911)
 
     if fixedcutsel:
@@ -74,12 +74,12 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
 
     model.optimize()
 
-    if not os.path.exists(f"gp_stats_{num_cuts_per_round}.txt") and cut_comp != "SCIP" and is_Test:
+    """if not os.path.exists(f"gp_stats_{num_cuts_per_round}.txt") and cut_comp != "SCIP" and is_Test:
         stats_file = f"gp_stats_{num_cuts_per_round}.txt"
         model.writeStatistics(stats_file)
     if not os.path.exists(f"scip_stats_{num_cuts_per_round}.txt") and cut_comp == "SCIP" and is_Test:
         stats_file = f"scip_stats_{num_cuts_per_round}.txt"
-        model.writeStatistics(stats_file)
+        model.writeStatistics(stats_file)"""
 
     if time_limit != 0:
         if fixedcutsel and is_Test:
@@ -104,7 +104,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                      instances_indexes=None,
                                                      sol_path=None,
                                                      test=False,
-                                                     num_cuts_per_round=10):  
+                                                     num_cuts_per_round=10,
+                                                     RL=False):  
     sol_times = []
     nnodes = []
     nb_done = 0
@@ -119,7 +120,7 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                                    parameter_settings=parameter_settings,
                                                                    time_limit=time_limit, fixedcutsel=fixedcutsel, 
                                                                    node_lim=node_lim, sol_path=sol_path, test=test,
-                                                                   num_cuts_per_round=num_cuts_per_round)
+                                                                   num_cuts_per_round=num_cuts_per_round, RL=RL)
                 sol_times.append(time_or_gap)
                 nnodes.append(visited_nodes)
                 nb_done += 1
