@@ -14,18 +14,20 @@ if __name__ == "__main__":
     parser.add_argument('time_limit', type=int, help='time_limit')
     parser.add_argument('seed', type=int, help='seed')
     parser.add_argument('nb_of_instances', type=int, help='nb_of_instances')
-    parser.add_argument('fixedcutsel', type=int, help='0 ou 1, fixedcutsel')
+    parser.add_argument('fixedcutsel', type=int, help='0 ou 1, fixedcutsel mode')
     parser.add_argument('node_lim', type=int, help='node_lim')
     parser.add_argument('sol_path', type=str, help='sol_path')
-    parser.add_argument('transformed', type=int, help='0 ou 1, tranformed')
+    parser.add_argument('transformed', type=int, help='0 ou 1, tranformed mode')
     parser.add_argument('test', type=int, help='test mode for SCIP')
     parser.add_argument('num_cuts_per_round', type=int, help='number of cuts per round')
     parser.add_argument('RL', type=int, help='0 ou 1, RL mode')
+    parser.add_argument('heuristic', type=int, help='0 ou 1, heuristic mode')
     args = parser.parse_args()
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
     test = bool(args.test)
-    RL = bool(args.RL)
+    Rl = bool(args.RL)
+    heuristic = bool(args.heuristic)
     if args.problem in ["gisp", "wpsm", "fcmcnf"]:
         if transformed:
             lp_dir = os.path.join(os.path.dirname(__file__), f"GNN_method/TransformedInstances/{args.training_folder}/")
@@ -34,7 +36,7 @@ if __name__ == "__main__":
         meannnodes, mean_val = scip_solver.perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder=lp_dir,
             cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
             node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path, test=test, 
-            num_cuts_per_round=args.num_cuts_per_round, RL=RL)
+            num_cuts_per_round=args.num_cuts_per_round, RL=Rl, heuristic=heuristic)
         print(mean_val)
     else:
         random.seed(args.seed)

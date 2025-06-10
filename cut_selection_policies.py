@@ -8,6 +8,7 @@ import numpy as np
 import os
 import json
 from filelock import FileLock
+from num_cut_heuristic import num_cut_heuristic
 
 
 def protectedDiv(left, right):
@@ -25,7 +26,7 @@ operations = {
 
 class CustomCutSelector(Cutsel):
 
-    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, get_scores=False, 
+    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, get_scores=False, heuristic=False, 
                  min_orthogonality_root=0.9, min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
@@ -35,10 +36,11 @@ class CustomCutSelector(Cutsel):
         self.test = test
         self.RL = RL
         self.get_scores = get_scores
+        self.heuristic = heuristic
         random.seed(42)
 
     def copy(self):
-        return CustomCutSelector(self.comp_policy, self.num_cuts_per_round, self.test, self.RL)
+        return CustomCutSelector(self.comp_policy, self.num_cuts_per_round, self.test, self.RL, self.get_scores, self.heuristic)
     
     def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
         """
@@ -91,7 +93,12 @@ class CustomCutSelector(Cutsel):
         max_non_forced_score, scores = self.scoring(cuts, self.test)       
 
         if self.get_scores:
+            print("scores.json", num_cuts_to_select, scores)
             self.ajouter_donnee_json("scores.json", num_cuts_to_select, scores)
+
+        if self.heuristic:
+            num = num_cut_heuristic(scores)
+            num_cuts_to_select = min(num, num_cuts_to_select)
 
         good_score = max_non_forced_score
 
@@ -355,7 +362,7 @@ class CustomCutSelector(Cutsel):
         scores[nselectedcuts], scores[best_pos] = scores[best_pos], scores[nselectedcuts]
         return cuts, scores
     
-    def ajouter_donnee_json(fichier, cle, valeurs):
+    def ajouter_donnee_json(self, fichier, cle, valeurs):
         valeurs_triees = sorted(valeurs, reverse=True)
         nouvelle_entree = {str(cle): valeurs_triees}
 

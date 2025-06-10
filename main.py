@@ -50,10 +50,18 @@ if __name__ == "__main__":
     else:
         node_lim = -1
 
-    get_scores= True  # Whether to get scores for info
+    get_scores= False  # Whether to get scores for info
     SCIP_func_test = False  # Whether to test the SCIP function
     parallel = True  # Whether to run in parallel for slurm on HPC
-    RL = False
+
+    Rl = False
+    heuristic = True 
+
+    dossier = os.path.join(conf.ROOT_DIR, "data", problem, testing_folder)
+    contenu = os.listdir(dossier)
+    fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
+    
+    n_test_instances = len(fichiers)
     
     """########### SMALL PARAM FOR TESTING ###########
     #n_test_instances
@@ -62,13 +70,8 @@ if __name__ == "__main__":
     seed="0"
     node_lim=-1
     fitness_size=1
+    #n_test_instances = 2
     ############ SMALL PARAM FOR TESTING ###########"""
-
-    dossier = os.path.join(conf.ROOT_DIR, "data", problem, testing_folder)
-    contenu = os.listdir(dossier)
-    fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
-    
-    n_test_instances = len(fichiers)  
 
     simulation_folder = os.path.join(conf.ROOT_DIR, "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
     if not os.path.exists(simulation_folder):
@@ -109,7 +112,8 @@ if __name__ == "__main__":
         test=SCIP_func_test,
         num_cuts_per_round=num_cuts_per_round,
         parallel=parallel,
-        RL=RL
+        RL=Rl,
+        heuristic=heuristic
     ) 
 
     # Evaluate the convergence of GP across generations
@@ -120,7 +124,7 @@ if __name__ == "__main__":
     evaluation_gnn_gp(problem, testing_folder, n_test_instances, gp_func_dic, time_limit=time_limit, 
                         fixedcutsel=GNN_comparison, GNN_transformed=transformed, node_lim=node_lim, 
                         sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder,
-                        num_cuts_per_round=num_cuts_per_round, RL=RL, get_scores=get_scores)
+                        num_cuts_per_round=num_cuts_per_round, RL=Rl, heuristic=heuristic, get_scores=get_scores)
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=[problem], partitions=[testing_folder], saving_folder=simulation_folder)

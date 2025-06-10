@@ -27,7 +27,8 @@ def evaluate(scoring_function, params):
          params["node_select"], str(params["time_limit"]), str(params["seed"]),
          str(params["nb_of_instances"]), str(int(params["fixedcutsel"])),
          str(params["node_lim"]), params["sol_path"], str(int(params["transformed"])), 
-         str(int(params["test"])), str(params["num_cuts_per_round"]), str(int(params["RL"]))],
+         str(int(params["test"])), str(params["num_cuts_per_round"]), str(int(params["RL"])),
+         str(int(params["heuristic"]))],
         capture_output=True, text=True)
     mean_solving_time_or_gap = result.stdout.strip()
 
@@ -48,7 +49,7 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
             training_folder="Train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 
             fixedcutsel=False, semantic_algo=False, node_lim=-1, sol_path=None, transformed=False, test=False,
-            num_cuts_per_round=10, parallel=False, RL=False):
+            num_cuts_per_round=10, parallel=False, RL=False, heuristic=False):
     
     if seed is None:
         seed = math.floor(random.random() * 10000)
@@ -104,7 +105,8 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         "transformed": transformed,
         "test": test,
         "num_cuts_per_round": num_cuts_per_round,
-        "RL": RL
+        "RL": RL,
+        "heuristic": heuristic
     }
 
     evaluate_with_params = partial(evaluate, params=params)

@@ -20,7 +20,7 @@ from GNN_method.Slurm.train_neural_network import get_standard_solve_data
 
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, test=False, 
-                          num_cuts_per_round=10, RL=False, get_scores=False):
+                          num_cuts_per_round=10, RL=False, heuristic=False, get_scores=False):
     model = Model()
     model.hideOutput()
     if fixedcutsel:            
@@ -48,14 +48,15 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
                                     sepapriority=-1, enfopriority=1, chckpriority=-1, sepafreq=-1, propfreq=-1,
                                     eagerfreq=-1, maxprerounds=-1, delaysepa=False, delayprop=False, needscons=False,
                                     presoltiming=SCIP_PRESOLTIMING.FAST, proptiming=SCIP_PROPTIMING.AFTERLPNODE)
-            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL)
+            cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL,
+                                             get_scores=get_scores, heuristic=heuristic)
             model.includeCutsel(cut_selector, "", "", 536870911)
             model.setParam('separating/maxstallroundsroot', num_rounds)
             model = set_scip_separator_params(model, num_rounds, 0, num_cuts_per_round, 0, 0)
         else:
             #cut_selector = CustomCutSelector(comp_policy=cut_comp)
             cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL, 
-                                             get_scores=get_scores)
+                                             get_scores=get_scores, heuristic=heuristic)
             model.includeCutsel(cut_selector, "", "", 536870911)
 
     if fixedcutsel:
@@ -106,7 +107,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                      sol_path=None,
                                                      test=False,
                                                      num_cuts_per_round=10,
-                                                     RL=False):  
+                                                     RL=False,
+                                                     heuristic=False):  
     sol_times = []
     nnodes = []
     nb_done = 0
@@ -121,7 +123,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                                    parameter_settings=parameter_settings,
                                                                    time_limit=time_limit, fixedcutsel=fixedcutsel, 
                                                                    node_lim=node_lim, sol_path=sol_path, test=test,
-                                                                   num_cuts_per_round=num_cuts_per_round, RL=RL)
+                                                                   num_cuts_per_round=num_cuts_per_round, RL=RL,
+                                                                   heuristic=heuristic)
                 sol_times.append(time_or_gap)
                 nnodes.append(visited_nodes)
                 nb_done += 1
