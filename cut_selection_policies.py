@@ -98,7 +98,8 @@ class CustomCutSelector(Cutsel):
 
         if self.heuristic:
             num = num_cut_heuristic(scores)
-            num_cuts_to_select = min(num, num_cuts_to_select)
+            #num_cuts_to_select = min(num, num_cuts_to_select)
+            num_cuts_to_select = num
 
         good_score = max_non_forced_score
 

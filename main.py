@@ -55,7 +55,9 @@ if __name__ == "__main__":
     parallel = True  # Whether to run in parallel for slurm on HPC
 
     Rl = False
-    heuristic = True 
+    heuristic = False  
+    if num_cuts_per_round == "heurisitic":
+        heuristic = True 
 
     dossier = os.path.join(conf.ROOT_DIR, "data", problem, testing_folder)
     contenu = os.listdir(dossier)
@@ -89,6 +91,9 @@ if __name__ == "__main__":
         os.remove(f"gp_stats_{num_cuts_per_round}.txt")
     if os.path.exists(f"scip_stats_{num_cuts_per_round}.txt"):
         os.remove(f"scip_stats_{num_cuts_per_round}.txt")
+
+    if num_cuts_per_round == "heurisitic":
+        num_cuts_per_round = "10000"
 
     main_GP(
         problem=problem,
