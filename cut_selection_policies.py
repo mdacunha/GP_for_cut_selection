@@ -273,9 +273,11 @@ class CustomCutSelector(Cutsel):
             return stats
 
         #getDualboundRoot = self.model.getDualboundRoot()
-        getNVars = self.model.getNVars()
+        
         sol = self.model.getBestSol() #if self.model.getNSols() > 0 else None
-        getNConss = self.model.getNConss()
+        if ind != 0:
+            getNConss = self.model.getNConss()
+            getNVars = self.model.getNVars()
 
         try:
             cutoffdist = self.model.getCutLPSolCutoffDistance(cut, sol)

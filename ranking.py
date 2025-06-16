@@ -155,7 +155,8 @@ if __name__ == "__main__":
 
     # Use :
 
-    plot_evolution_with_point(df_result, folder, lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=True, compare=compare)
+    plot_evolution_with_point(df_result, folder, 
+                              lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=True, compare=compare)
 
     #print(df_result.to_string(index=False))
 
