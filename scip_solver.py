@@ -20,7 +20,7 @@ from GNN_method.Slurm.train_neural_network import get_standard_solve_data
 
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, test=False, 
-                          num_cuts_per_round=10, RL=False, heuristic=False, get_scores=False):
+                          num_cuts_per_round=10, RL=False, nnet=None, heuristic=False, get_scores=False):
     model = Model()
     model.hideOutput()
     if fixedcutsel:            
@@ -56,7 +56,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         else:
             #cut_selector = CustomCutSelector(comp_policy=cut_comp)
             cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL, 
-                                             get_scores=get_scores, heuristic=heuristic)
+                                             nnet=nnet, is_Test=is_Test, get_scores=get_scores, heuristic=heuristic)
             model.includeCutsel(cut_selector, "", "", 536870911)
 
     if fixedcutsel:

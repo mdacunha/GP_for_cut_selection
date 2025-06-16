@@ -30,7 +30,7 @@ if __name__ == "__main__":
         alphaE2 = 0.5  # Probability of building an edge
 
         """########### SMALL PARAM FOR TESTING ###########
-        n=1
+        n=2
         n_test=3
         min_n_train=30
         max_n_train=40

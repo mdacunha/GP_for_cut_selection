@@ -10,7 +10,7 @@ import conf
 import data.build_instances
 
 
-def evaluation_gnn_gp(problem, testing_folder, nb_of_test_instances, gp_func_dic, time_limit=None, 
+def evaluation_gnn_gp(problem, training_folder, testing_folder, nb_of_test_instances, gp_func_dic, time_limit=None, 
                         fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, 
                         do_gnn=True, build_set_of_instances=True,saving_folder="simulation_outcomes",
                         num_cuts_per_round=10, RL=False, heuristic=False, get_scores=False):
@@ -63,7 +63,7 @@ def evaluation_gnn_gp(problem, testing_folder, nb_of_test_instances, gp_func_dic
             # solving GP_function and heuristics and SCIP
             GP_and_SCIP = os.path.join(conf.ROOT_DIR, "artificial_pbs/subprocess_evaluation_gp_SCIPbaseline.py")
             result = subprocess.run(
-                ['python', GP_and_SCIP, problem, testing_folder, json_gp_func_dic, str(time_limit), 
+                ['python', GP_and_SCIP, problem, training_folder, testing_folder, json_gp_func_dic, str(time_limit), 
                                                    str(int(fixedcutsel)), str(int(GNN_transformed)), str(node_lim), 
                                                    sol_path, instance, saving_folder, str(num_cuts_per_round),
                                                    str(int(RL)), str(int(heuristic)), str(int(get_scores))],

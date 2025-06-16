@@ -11,9 +11,11 @@ import conf
 from scip_solver import perform_SCIP_instance
 from conf import *
 
+from RL.nn_wrapper import NeuralNetworkWrapper
+
 
 def evaluate_a_function_and_store_it(problem, function, performance_folder, saving_folder,
-                                     testing_folder, parameter_settings=False, time_limit=0, 
+                                     training_folder, testing_folder, parameter_settings=False, time_limit=0, 
                                      fixedcutsel=False, node_lim=-1, sol_path=None, func_name=None,
                                      instances=[], num_cuts_per_round=10, RL=False, heuristic=False,
                                      get_scores=False):
@@ -32,6 +34,24 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
         comp_policy = function
         sel_policy = "BFS"
 
+    if Rl:
+        training_path=os.path.join(conf.ROOT_DIR, f"data/{problem}/{training_folder}/")
+        testing_path=os.path.join(conf.ROOT_DIR, f"data/{problem}/{testing_folder}/")
+        nnetwrapper = NeuralNetworkWrapper(training_path=training_path,
+                                            testing_path=testing_path,
+                                            simulation_folder=saving_folder,
+                                            problem=problem,
+                                            cut_comp=comp_policy,
+                                            parameter_settings=True,
+                                            saving_folder="weights",
+                                            load_checkpoint=True,
+                                            sol_path=sol_path
+                                            )
+        neural_net = os.path.join(saving_folder, "weights")
+        nnetwrapper.load_checkpoint(neural_net)
+    else:
+        nnetwrapper = None
+
     perfs = {}
     path = os.path.join(conf.ROOT_DIR, performance_folder)
     if instances == []:
@@ -44,7 +64,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
                                                    parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    is_Test=True, num_cuts_per_round=num_cuts_per_round, 
-                                                   RL=RL, heuristic=heuristic, get_scores=get_scores)
+                                                   RL=RL, nnetwrapper=nnetwrapper, heuristic=heuristic, get_scores=get_scores)
 
             perfs[instance[:len(instance) - 3]] = [nb_nodes, time]
 
@@ -62,7 +82,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
         json.dump(perfs, outfile)
 
 
-def evaluate_the_GP_heuristics_and_SCIP_functions(problem, testing_folder="test", GP_dics=None,
+def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="train", testing_folder="test", GP_dics=None,
                                                   parameter_settings=False, time_limit=0, 
                                                    fixedcutsel=False, GNN_transformed=False, 
                                                    node_lim=-1, sol_path=None, instances=[], 
@@ -75,7 +95,7 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, testing_folder="test"
         folder = f"data/{problem}/{testing_folder}"
     if GP_dics is not None:
         for key in GP_dics.keys():
-            evaluate_a_function_and_store_it(problem, GP_dics[key], folder, saving_folder, testing_folder,
+            evaluate_a_function_and_store_it(problem, GP_dics[key], folder, saving_folder, training_folder, testing_folder,
                                              parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    func_name="GP_parsimony_parameter_"+str(key), instances=instances,
@@ -93,6 +113,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('problem', type=str, help='problem')
+    parser.add_argument('training_folder', type=str, help='testing_folder')
     parser.add_argument('testing_folder', type=str, help='testing_folder')
     parser.add_argument('json_gp_func_dic', type=str, help='json_gp_func_dic')
     parser.add_argument('time_limit', type=int, help='time limit for the solver')
@@ -108,6 +129,7 @@ if __name__ == "__main__":
     parser.add_argument('get_scores', type=int, help='get_scores')
     args = parser.parse_args()
     problem = args.problem
+    training_folder=args.training_folder
     testing_folder = args.testing_folder
     fixedcutsel = bool(args.fixedcutsel)
     GNN_transformed = bool(args.GNN_transformed)
@@ -117,7 +139,7 @@ if __name__ == "__main__":
     gp_func_dic = ast.literal_eval(args.json_gp_func_dic)
     instance = args.instance
 
-    evaluate_the_GP_heuristics_and_SCIP_functions(problem, testing_folder=testing_folder, GP_dics=gp_func_dic, parameter_settings=True, 
+    evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder=training_folder, testing_folder=testing_folder, GP_dics=gp_func_dic, parameter_settings=True, 
                                                   time_limit=args.time_limit, fixedcutsel=fixedcutsel, 
                                                   GNN_transformed=GNN_transformed, node_lim=args.node_lim, 
                                                   sol_path=args.sol_path, instances=[instance], saving_folder=args.saving_folder, 

@@ -34,7 +34,7 @@ def parse_filename(filename):
     match = re.match(r'job_([^_]+)_([0-9]+)_([0-9]+)\.out', filename)
     if match:
         problem = match.group(1)
-        nb_cuts = int(match.group(2))
+        nb_cuts = int(match.group(2)) if match.group(2).isdigit() else 10000000
         seed = int(match.group(3))
         return problem, nb_cuts, seed
     else:
@@ -68,38 +68,39 @@ def find(df, pb, nb_cuts, seed):
 
     return df[(df['problem'] == pb) & (df['nb_cuts'] == nb_cuts) & (df['seed'] == seed)]
 
-def plot_evolution_with_point(df, folder, lowbound=-np.inf, mean=True, median=False, points=True, show=False, save=False):
-
-    df = df[df["score"] >= lowbound]
+def plot_evolution_with_point(dfs, folder, lowbound=-np.inf, mean=True, median=False, points=True, show=False, save=False, compare=False):
 
     plt.figure(figsize=(10, 6))
-    problems = sorted(df["problem"].unique())
-    palette = sns.color_palette("Set1", n_colors=len(problems))
-    color_map = dict(zip(problems, palette))
+    for df in dfs:
+        df = df[df["score"] >= lowbound]
 
-    cut_values = sorted(df["nb_cuts"].unique())
-    
-    # Définir un petit offset horizontal pour chaque problème
-    offsets = np.linspace(-0.8, 0.8, len(problems))
+        problems = sorted(df["problem"].unique())
+        palette = sns.color_palette("Set1", n_colors=len(problems))
+        color_map = dict(zip(problems, palette))
 
-    # Courbes moyennes
-    for problem in problems:
-        if mean:
-            mean_df = df[df["problem"] == problem].groupby("nb_cuts")["score"].mean().reset_index()
-            plt.plot(mean_df["nb_cuts"], mean_df["score"] * 100, marker='o',
-                    label=f"Moyenne - {problem}", color=color_map[problem])
-        if median:
-            median_df = df[df["problem"] == problem].groupby("nb_cuts")["score"].median().reset_index()
-            plt.plot(median_df['nb_cuts'], median_df['score'] * 100, marker='o',
-                    label=f"Mean - {problem}", color=color_map[problem], linestyle='--', linewidth=1.8)
+        cut_values = sorted(df["nb_cuts"].unique())
+        
+        # Définir un petit offset horizontal pour chaque problème
+        offsets = np.linspace(-0.8, 0.8, len(problems))
 
-    # Points individuels avec décalage horizontal
-    for i, problem in enumerate(problems):
-        if points:
-            sub_df = df[df["problem"] == problem].copy()
-            sub_df["nb_cuts_jittered"] = sub_df["nb_cuts"] + offsets[i]
-            plt.scatter(sub_df["nb_cuts_jittered"], sub_df["score"] * 100,
-                        label=f"Points - {problem}", color=color_map[problem], alpha=0.6, s=40, marker='x')
+        # Courbes moyennes
+        for problem in problems:
+            if mean:
+                mean_df = df[df["problem"] == problem].groupby("nb_cuts")["score"].mean().reset_index()
+                plt.plot(mean_df["nb_cuts"], mean_df["score"] * 100, marker='o',
+                        label=f"Moyenne - {problem}", color=color_map[problem])
+            if median:
+                median_df = df[df["problem"] == problem].groupby("nb_cuts")["score"].median().reset_index()
+                plt.plot(median_df['nb_cuts'], median_df['score'] * 100, marker='o',
+                        label=f"Mean - {problem}", color=color_map[problem], linestyle='--', linewidth=1.8)
+
+        # Points individuels avec décalage horizontal
+        for i, problem in enumerate(problems):
+            if points:
+                sub_df = df[df["problem"] == problem].copy()
+                sub_df["nb_cuts_jittered"] = sub_df["nb_cuts"] + offsets[i]
+                plt.scatter(sub_df["nb_cuts_jittered"], sub_df["score"] * 100,
+                            label=f"Points - {problem}", color=color_map[problem], alpha=0.6, s=40, marker='x')
 
     plt.xlabel("Nombre de coupes")
     plt.ylabel("Écart relatif (%)")
@@ -121,26 +122,40 @@ def plot_evolution_with_point(df, folder, lowbound=-np.inf, mean=True, median=Fa
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyse les fichiers .out et trace l'évolution de l'écart relatif.")
-    parser.add_argument("directory", help="Chemin du dossier contenant les fichiers .out")
+    parser.add_argument("directories", nargs='+', help="Chemin du dossier contenant les fichiers .out")
     args = parser.parse_args()
-    directory_ = args.directory
-    directory = os.path.abspath(directory_)
 
-    df_result, full = main(directory)
-    
-    folder = f"{directory_[3:]}_results"
-    folder = os.path.join(directory, folder)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    directories = [os.path.abspath(directory) for directory in args.directories]
 
-    table_name = "full_results.csv" if full else "results.csv"
-    df_result.to_csv(os.path.join(folder, table_name), index=False)
+    if len(directories) == 1:
+        compare = False
+        directory_ = args.directories[0]
+        directory = os.path.abspath(directory_)
+
+        df_result = []
+        df, full = main(directory)
+        df_result.append(df)
+        
+        folder = f"{directory_[3:]}_results"
+        folder = os.path.join(directory, folder)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        table_name = "full_results.csv" if full else "results.csv"
+        df.to_csv(os.path.join(folder, table_name), index=False)
+    else:
+        compare = True
+        df_result = []
+        for directory_ in directories:
+            directory = os.path.abspath(directory_)
+            df, full = main(directory)
+
+            df_result.append(df)
 
 
     # Use :
 
-    plot_evolution_with_point(df_result, folder, lowbound=-0.2, mean=True, median=False, points=True, show=True, save=True)
-
+    plot_evolution_with_point(df_result, folder, lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=True, compare=compare)
 
     #print(df_result.to_string(index=False))
 
@@ -152,4 +167,4 @@ if __name__ == "__main__":
 
 
 
-#python ranking.py ../logs
+#python ranking.py ../logs_2

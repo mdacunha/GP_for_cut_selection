@@ -26,8 +26,8 @@ operations = {
 
 class CustomCutSelector(Cutsel):
 
-    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, get_scores=False, heuristic=False, 
-                 min_orthogonality_root=0.9, min_orthogonality=0.9):
+    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, nnet=None, is_Test=False, get_scores=False, 
+                 heuristic=False, min_orthogonality_root=0.9, min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
         self.num_cuts_per_round = num_cuts_per_round
@@ -35,12 +35,11 @@ class CustomCutSelector(Cutsel):
         self.min_orthogonality = min_orthogonality
         self.test = test
         self.RL = RL
+        self.nnet = nnet
+        self.is_Test = is_Test
         self.get_scores = get_scores
         self.heuristic = heuristic
         random.seed(42)
-
-    def copy(self):
-        return CustomCutSelector(self.comp_policy, self.num_cuts_per_round, self.test, self.RL, self.get_scores, self.heuristic)
     
     def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
         """
@@ -66,18 +65,22 @@ class CustomCutSelector(Cutsel):
         nselectedcuts = 0
 
         if root:
-            k=4
+            c = 4
         else:
-            k=1
+            c = 1
 
         if self.RL:
-            k = 1
-            #num_cut = 
+            features = self.getfeatures(cuts)
+            
+            if self.is_Test:
+                num_cut = n_cuts * self.nnet.predict(features, mode="test")
+            else:
+                num_cut = n_cuts * self.nnet.predict(features, mode="train")
         else:
-            num_cut = self.num_cuts_per_round
+            num_cut = c * self.num_cuts_per_round
             
         # Get the number of cuts that we will select this round.
-        num_cuts_to_select = min(maxnselectedcuts, max(k * num_cut - len(forcedcuts), 0), n_cuts)
+        num_cuts_to_select = min(maxnselectedcuts, max(num_cut - len(forcedcuts), 0), n_cuts)
 
         # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
         # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
@@ -169,7 +172,46 @@ class CustomCutSelector(Cutsel):
                     return float(expr)
                 except ValueError:
                     return context[expr]
-                
+                    
+        scores = [0] * len(cuts)
+        max_score = 0.0
+           
+        for i, cut in enumerate(cuts):      
+            context = self.getcontext(cut, ind=0)
+
+            if not test:
+                score = evaluate_expression(self.comp_policy, context)
+            else:
+                efficacy_weight=1.0
+                objparal_weight=0.1
+                intsupport_weight=0.1
+                dircutoffdist_weight=0.0
+
+                # Score pondéré
+                score = (
+                    efficacy_weight * context['getEfficacy'] + 
+                    objparal_weight * context['getObjParallelism'] +
+                    intsupport_weight * context['getNumIntCols'] / context['getNNonz'] +
+                    dircutoffdist_weight * max(context['getEfficacy'], context['getCutLPSolCutoffDistance'])
+                )
+    
+            score += 1e-4 if cut.isInGlobalCutpool() else 0
+            score += random.uniform(0, 1e-6)
+            max_score = max(max_score, score)
+            scores[i] = score
+
+            
+
+        return max_score, scores
+    
+    def getfeatures(self, cuts):
+        features = []
+        for cut in cuts:
+            context = self.getcontext(cut, ind=2)
+            features.append(np.array([[context[key] for key in context.keys()]]))
+        return features
+
+    def getcontext(self, cut, ind=1):
         def compute_cut_violation(model, row):
             # Récupérer les variables et les coefficients (α)
             cols = row.getCols()  # Récupère les colonnes associées à la ligne
@@ -230,26 +272,41 @@ class CustomCutSelector(Cutsel):
             }
             return stats
 
-                    
-        scores = [0] * len(cuts)
-        max_score = 0.0
-           
-        for i, cut in enumerate(cuts):
-            #getDualboundRoot = self.model.getDualboundRoot()
-            getNVars = self.model.getNVars()
-            sol = self.model.getBestSol() #if self.model.getNSols() > 0 else None
-            getNConss = self.model.getNConss()
-    
-            try:
-                cutoffdist = self.model.getCutLPSolCutoffDistance(cut, sol)
-            except:
-                cutoffdist = 0.0  # pas toujours dispo
-                print("Cutsel: Cut does not have a cutoff distance, using 0.0")
-    
-            # Cycle over all cuts and score them
+        #getDualboundRoot = self.model.getDualboundRoot()
+        getNVars = self.model.getNVars()
+        sol = self.model.getBestSol() #if self.model.getNSols() > 0 else None
+        getNConss = self.model.getNConss()
 
-            
-    
+        try:
+            cutoffdist = self.model.getCutLPSolCutoffDistance(cut, sol)
+        except:
+            cutoffdist = 0.0  # pas toujours dispo
+            print("Cutsel: Cut does not have a cutoff distance, using 0.0")      
+
+        if ind == 0:
+            context = {
+                'getEfficacy': self.model.getCutEfficacy(cut),
+                'getNumIntCols': self.model.getRowNumIntCols(cut),
+                'getCutLPSolCutoffDistance': cutoffdist,
+                'getObjParallelism': self.model.getRowObjParallelism(cut),
+                'getCutViolation': compute_cut_violation(self.model, cut),
+                "10000000":10000000
+            }
+        elif ind==1:
+            context = {
+                'getDepth': self.model.getDepth(),
+                'getNConss': getNConss,
+                'getNVars': getNVars,
+                'getNNonz': cut.getNNonz(),
+                'getEfficacy': self.model.getCutEfficacy(cut),
+                'getNumIntCols': self.model.getRowNumIntCols(cut),
+                'getCutLPSolCutoffDistance': cutoffdist,
+                'getObjParallelism': self.model.getRowObjParallelism(cut),
+                'getCutViolation': compute_cut_violation(self.model, cut),
+                "10000000":10000000
+            }
+
+        elif ind==2:
             context = {
                     'getDepth': self.model.getDepth(),
                     'getNConss': getNConss,
@@ -270,29 +327,8 @@ class CustomCutSelector(Cutsel):
                     'std_obj_values' : get_obj_coeff_stats(self.model)['std'],
                     "10000000":10000000
                 }
-                    
-            if not test:
-                score = evaluate_expression(self.comp_policy, context)
-            else:
-                efficacy_weight=1.0
-                objparal_weight=0.1
-                intsupport_weight=0.1
-                dircutoffdist_weight=0.0
 
-                # Score pondéré
-                score = (
-                    efficacy_weight * context['getEfficacy'] + 
-                    objparal_weight * context['getObjParallelism'] +
-                    intsupport_weight * context['getNumIntCols'] / context['getNNonz'] +
-                    dircutoffdist_weight * max(context['getEfficacy'], context['getCutLPSolCutoffDistance'])
-                )
-    
-            score += 1e-4 if cut.isInGlobalCutpool() else 0
-            score += random.uniform(0, 1e-6)
-            max_score = max(max_score, score)
-            scores[i] = score
-
-        return max_score, scores
+        return context
     
         
 
