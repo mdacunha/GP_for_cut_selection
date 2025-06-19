@@ -18,9 +18,28 @@ from constraintHandler_GP import RepeatSepaConshdlr
 
 from GNN_method.Slurm.train_neural_network import get_standard_solve_data
 
+from RL.arguments import args
+import torch
+from RL.neural_network import nnet as nnet_for_GP
+
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
-                          time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, test=False, 
-                          num_cuts_per_round=10, RL=False, nnet=None, heuristic=False, get_scores=False):
+                          time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, final_test=False,
+                          test=False, num_cuts_per_round=10, RL=False, higher_simulation_folder="", 
+                          nnet=None, inputs_type="", heuristic=False, get_scores=False):
+    
+    if RL and nnet==None:
+        new_args = args
+        new_args.update({
+                'inputs_type': inputs_type
+            })
+        nnet = nnet_for_GP(new_args)
+        filepath = os.path.join(higher_simulation_folder, "weights" + ".pth.tar")
+        if not os.path.exists(filepath):
+            raise ("No model in path {}".format(filepath))
+        map_location = None if args["cuda"] else 'cpu'
+        checkpoint = torch.load(filepath, map_location=map_location)
+        nnet.load_state_dict(checkpoint['state_dict'])
+        
     model = Model()
     model.hideOutput()
     if fixedcutsel:            
@@ -56,7 +75,8 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         else:
             #cut_selector = CustomCutSelector(comp_policy=cut_comp)
             cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL, 
-                                             nnet=nnet, is_Test=is_Test, get_scores=get_scores, heuristic=heuristic)
+                                             nnet=nnet, inputs_type=inputs_type, is_Test=is_Test, final_test=final_test,
+                                             get_scores=get_scores, heuristic=heuristic)
             model.includeCutsel(cut_selector, "", "", 536870911)
 
     if fixedcutsel:
@@ -73,7 +93,6 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         assert os.path.isfile(real_sol_path) and '.sol' in real_sol_path, 'Sol is {}'.format(real_sol_path)
         sol = model.readSolFile(real_sol_path)
         model.addSol(sol)
-
     model.optimize()
 
     """if not os.path.exists(f"gp_stats_{num_cuts_per_round}.txt") and cut_comp != "SCIP" and is_Test:
@@ -108,6 +127,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                      test=False,
                                                      num_cuts_per_round=10,
                                                      RL=False,
+                                                     inputs_type="",
+                                                     higher_simulation_folder="",
                                                      heuristic=False):  
     sol_times = []
     nnodes = []
@@ -124,6 +145,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                                    time_limit=time_limit, fixedcutsel=fixedcutsel, 
                                                                    node_lim=node_lim, sol_path=sol_path, test=test,
                                                                    num_cuts_per_round=num_cuts_per_round, RL=RL,
+                                                                   inputs_type=inputs_type,
+                                                                   higher_simulation_folder=higher_simulation_folder,
                                                                    heuristic=heuristic)
                 sol_times.append(time_or_gap)
                 nnodes.append(visited_nodes)

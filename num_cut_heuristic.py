@@ -10,8 +10,7 @@ def detect_big_gaps(scores, z_threshold=2, top_k=1):
     if len(scores) < 2:
         return len(scores)
 
-    sorted_scores = sorted(scores, reverse=True)
-    diffs = np.diff(sorted_scores)  # score[i] - score[i+1]
+    diffs = np.diff(scores)  # score[i] - score[i+1]
     abs_diffs = np.abs(diffs)
 
     mean = np.mean(abs_diffs)
@@ -46,8 +45,8 @@ def knee_method(scores):
     return knee_idx
 
 def num_cut_heuristic(scores):
-
+    sorted_scores = sorted(scores, reverse=True)
     return max(
-        detect_big_gaps(scores, z_threshold=Z_THRESHOLD, top_k=TOP_K),
-        knee_method(scores)
+        detect_big_gaps(sorted_scores, z_threshold=Z_THRESHOLD, top_k=TOP_K),
+        knee_method(sorted_scores)
     )

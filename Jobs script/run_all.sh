@@ -3,8 +3,8 @@
 
 # Listes d'arguments
 ARG1_LIST=("gisp" "wpsm" "fcmcnf")
-ARG2_LIST=("5" "10" "30" "50" "70")
-ARG3_LIST=("0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "10")
+ARG2_LIST=("2" "5" "10" "20" "30" "40" "50" "70" "heuristic", "RL")
+ARG3_LIST=("0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14")
 
 # Soumettre un job par combinaison
 for arg1 in "${ARG1_LIST[@]}"; do

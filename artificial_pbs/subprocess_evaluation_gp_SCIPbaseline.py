@@ -10,15 +10,18 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import conf
 from scip_solver import perform_SCIP_instance
 from conf import *
+from RL.arguments import args as argss
+import torch
 
-from RL.nn_wrapper import NeuralNetworkWrapper
+from RL.neural_network import nnet
 
 
 def evaluate_a_function_and_store_it(problem, function, performance_folder, saving_folder,
-                                     training_folder, testing_folder, parameter_settings=False, time_limit=0, 
+                                     training_folder, testing_folder, higher_simulation_folder="", 
+                                     parameter_settings=False, time_limit=0, 
                                      fixedcutsel=False, node_lim=-1, sol_path=None, func_name=None,
-                                     instances=[], num_cuts_per_round=10, RL=False, heuristic=False,
-                                     get_scores=False):
+                                     instances=[], num_cuts_per_round=10, RL=False, inputs_type="",
+                                     heuristic=False, get_scores=False):
     
     if function == "best_estimate_BFS":
         comp_policy = "estimate"
@@ -34,23 +37,20 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
         comp_policy = function
         sel_policy = "BFS"
 
-    if Rl:
-        training_path=os.path.join(conf.ROOT_DIR, f"data/{problem}/{training_folder}/")
-        testing_path=os.path.join(conf.ROOT_DIR, f"data/{problem}/{testing_folder}/")
-        nnetwrapper = NeuralNetworkWrapper(training_path=training_path,
-                                            testing_path=testing_path,
-                                            simulation_folder=saving_folder,
-                                            problem=problem,
-                                            cut_comp=comp_policy,
-                                            parameter_settings=True,
-                                            saving_folder="weights",
-                                            load_checkpoint=True,
-                                            sol_path=sol_path
-                                            )
-        neural_net = os.path.join(saving_folder, "weights")
-        nnetwrapper.load_checkpoint(neural_net)
+    if RL:
+        args = argss
+        args.update({
+                'inputs_type': inputs_type
+            })
+        filepath = os.path.join(higher_simulation_folder, "weights.pth.tar")
+        if not os.path.exists(filepath):
+            raise ("No model in path {}".format(filepath))
+        map_location = None if args["cuda"] else 'cpu'
+        checkpoint = torch.load(filepath, map_location=map_location, weights_only=True)
+        nn = nnet(args)
+        nn.load_state_dict(checkpoint['state_dict'])
     else:
-        nnetwrapper = None
+        nn = None
 
     perfs = {}
     path = os.path.join(conf.ROOT_DIR, performance_folder)
@@ -63,8 +63,9 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
             nb_nodes,time = perform_SCIP_instance(instance_path, cut_comp=comp_policy, node_select=sel_policy,
                                                    parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
-                                                   is_Test=True, num_cuts_per_round=num_cuts_per_round, 
-                                                   RL=RL, nnetwrapper=nnetwrapper, heuristic=heuristic, get_scores=get_scores)
+                                                   is_Test=True, final_test=True, num_cuts_per_round=num_cuts_per_round, 
+                                                   RL=RL, nnet=nn, inputs_type=inputs_type,
+                                                   heuristic=heuristic, get_scores=get_scores)
 
             perfs[instance[:len(instance) - 3]] = [nb_nodes, time]
 
@@ -82,13 +83,14 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
         json.dump(perfs, outfile)
 
 
-def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="train", testing_folder="test", GP_dics=None,
+def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="train", testing_folder="test", 
+                                                  higher_simulation_folder="", GP_dics=None,
                                                   parameter_settings=False, time_limit=0, 
                                                    fixedcutsel=False, GNN_transformed=False, 
                                                    node_lim=-1, sol_path=None, instances=[], 
                                                    saving_folder="simulation_outcomes",
-                                                   num_cuts_per_round=10, RL=False, heuristic=False,
-                                                   get_scores=False):
+                                                   num_cuts_per_round=10, RL=False, inputs_type="",
+                                                   heuristic=False, get_scores=False):
     if GNN_transformed:
         folder = f"GNN_method/TransformedInstances/{testing_folder}"
     else:
@@ -96,16 +98,17 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="trai
     if GP_dics is not None:
         for key in GP_dics.keys():
             evaluate_a_function_and_store_it(problem, GP_dics[key], folder, saving_folder, training_folder, testing_folder,
+                                             higher_simulation_folder=higher_simulation_folder,
                                              parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    func_name="GP_parsimony_parameter_"+str(key), instances=instances,
-                                                   num_cuts_per_round=num_cuts_per_round, RL=RL, heuristic=heuristic,
-                                                   get_scores=get_scores)
+                                                   num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type,
+                                                   heuristic=heuristic, get_scores=get_scores)
 
 
     functions = ["SCIP"]#"best_estimate_BFS","best_estimate_DFS","best_LB_BFS"]
     for function in functions:
-        evaluate_a_function_and_store_it(problem, function, folder, saving_folder, testing_folder,
+        evaluate_a_function_and_store_it(problem, function, folder, saving_folder, training_folder, testing_folder,
                                          parameter_settings=parameter_settings, time_limit=time_limit, 
                                          sol_path=sol_path, instances=instances, num_cuts_per_round=num_cuts_per_round)
 
@@ -113,8 +116,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('problem', type=str, help='problem')
-    parser.add_argument('training_folder', type=str, help='testing_folder')
+    parser.add_argument('training_folder', type=str, help='training_folder')
     parser.add_argument('testing_folder', type=str, help='testing_folder')
+    parser.add_argument('higher_simulation_folder', type=str, help='higher_simulation_folder')
     parser.add_argument('json_gp_func_dic', type=str, help='json_gp_func_dic')
     parser.add_argument('time_limit', type=int, help='time limit for the solver')
     parser.add_argument('fixedcutsel', type=int, help='0 ou 1, fixedcutsel')
@@ -125,24 +129,28 @@ if __name__ == "__main__":
     parser.add_argument('saving_folder', type=str, help='saving_folder')
     parser.add_argument('num_cuts_per_round', type=int, help='num_cuts_per_round')
     parser.add_argument('RL', type=int, help='RL')
+    parser.add_argument('inputs_type', type=str, help='inputs_type')
     parser.add_argument('heuristic', type=int, help='heuristic')
     parser.add_argument('get_scores', type=int, help='get_scores')
     args = parser.parse_args()
     problem = args.problem
     training_folder=args.training_folder
     testing_folder = args.testing_folder
+    higher_simulation_folder = args.higher_simulation_folder
     fixedcutsel = bool(args.fixedcutsel)
     GNN_transformed = bool(args.GNN_transformed)
-    Rl = bool(args.RL)
+    RL = bool(args.RL)
     heuristic = bool(args.heuristic)
 
     gp_func_dic = ast.literal_eval(args.json_gp_func_dic)
     instance = args.instance
 
-    evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder=training_folder, testing_folder=testing_folder, GP_dics=gp_func_dic, parameter_settings=True, 
+    evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder=training_folder, testing_folder=testing_folder, 
+                                                  higher_simulation_folder=higher_simulation_folder,
+                                                  GP_dics=gp_func_dic, parameter_settings=True, 
                                                   time_limit=args.time_limit, fixedcutsel=fixedcutsel, 
                                                   GNN_transformed=GNN_transformed, node_lim=args.node_lim, 
                                                   sol_path=args.sol_path, instances=[instance], saving_folder=args.saving_folder, 
-                                                  num_cuts_per_round=args.num_cuts_per_round, RL=Rl, heuristic=heuristic,
-                                                  get_scores=args.get_scores)
+                                                  num_cuts_per_round=args.num_cuts_per_round, RL=RL, inputs_type=args.inputs_type,
+                                                  heuristic=heuristic, get_scores=args.get_scores)
     print("It is ok for GP_function and the SCIP baseline")

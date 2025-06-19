@@ -30,11 +30,19 @@ def extract_values_from_file(filepath):
         return None
 
 def parse_filename(filename):
-    # exemple : job_MIPLIB2017_40_1.out
-    match = re.match(r'job_([^_]+)_([0-9]+)_([0-9]+)\.out', filename)
+    # exemple : job_MIPLIB2017_heuristic_1.out ou job_MIPLIB2017_40_1.out
+    match = re.match(r'job_([^_]+)_([^_]+)_([0-9]+)\.out', filename)
     if match:
         problem = match.group(1)
-        nb_cuts = int(match.group(2)) if match.group(2).isdigit() else 10000000
+        nb_cuts = match.group(2)  # peut être une chaîne ou un nombre
+        try:
+            nb_cuts = int(nb_cuts)
+        except ValueError:
+            pass  # reste une chaîne si ce n’est pas convertible
+        if nb_cuts == "heuristic":
+            nb_cuts = 90
+        elif nb_cuts == "RL":
+            nb_cuts = 100
         seed = int(match.group(3))
         return problem, nb_cuts, seed
     else:
@@ -142,7 +150,10 @@ if __name__ == "__main__":
             os.makedirs(folder)
 
         table_name = "full_results.csv" if full else "results.csv"
-        df.to_csv(os.path.join(folder, table_name), index=False)
+        d = df.copy()
+        d["nb_cuts"] = d["nb_cuts"].replace(90, "heuristic")
+        d["nb_cuts"] = d["nb_cuts"].replace(100, "RL")
+        d.to_csv(os.path.join(folder, table_name), index=False)
     else:
         compare = True
         df_result = []
@@ -156,7 +167,7 @@ if __name__ == "__main__":
     # Use :
 
     plot_evolution_with_point(df_result, folder, 
-                              lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=True, compare=compare)
+                              lowbound=-0.4, mean=True, median=False, points=True, show=True, save=True, compare=compare)
 
     #print(df_result.to_string(index=False))
 
@@ -168,4 +179,4 @@ if __name__ == "__main__":
 
 
 
-#python ranking.py ../logs_2
+#python ranking.py ../logs_ind_0_heuristic

@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument('seed', type=str, help="Seed that we choose")
 
     # side quests : 
+    parser.add_argument('inputs_type', type=str, help="inputs_type for NN") # one of ["only_scores", "only_features", "scores_and_features"]
     parser.add_argument('GP_function_test', type=str, help="Testing folder")
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
@@ -24,13 +25,16 @@ if __name__ == "__main__":
     # Parameters for GP_function training
     problem = args.problem  # Problem type
     training_folder = "train"
+    more_training_folder = "more_train"
     testing_folder= "test"
     initial_pop = 127  # Population size for tree-based heuristics
     mate = 0.9  # Crossover rate
     mutate = 0.1  # Mutation rate
     nb_of_gen = 20  # Number of generations
     num_cuts_per_round = args.num_cuts_per_round
+    num_cuts_per_round_by_default = "30"
     seed = args.seed  # Random seed
+    inputs_type = args.inputs_type
     sol_path = args.sol_path  # Path to the solution file
 
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
@@ -55,14 +59,16 @@ if __name__ == "__main__":
     parallel = True  # Whether to run in parallel for slurm on HPC
 
     heuristic = False  # DO NOT USE, set num_cuts_per_round == "heuristic" instead
-    Rl = False # DO NOT USE, set num_cuts_per_round == "Rl" instead
-    load_checkpoint = False  # Whether to load a checkpoint for first RL training
-    loop = 1
-    
     if num_cuts_per_round == "heuristic":
         heuristic = True 
-    elif num_cuts_per_round == "Rl":
-        Rl = True
+
+
+    RL = False # DO NOT USE, set num_cuts_per_round == "RL" instead
+    load_checkpoint = False  # Whether to load a checkpoint for first RL training
+    loop = 1
+    extend_training_instances = True
+    if num_cuts_per_round == "RL":
+        RL = True
         loop = 3
 
     dossier = os.path.join(conf.ROOT_DIR, "data", problem, testing_folder)
@@ -77,7 +83,7 @@ if __name__ == "__main__":
     nb_of_gen=0
     seed="0"
     node_lim=-1
-    fitness_size=1
+    fitness_size=5
     loop=1
     #n_test_instances = 2
     ############ SMALL PARAM FOR TESTING ###########"""
@@ -101,22 +107,27 @@ if __name__ == "__main__":
     
 
     for i in range(loop):
-
-        simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed + "__loop__" + str(i))
-        if not os.path.exists(simulation_folder):
-            os.makedirs(simulation_folder)
+        if num_cuts_per_round == "RL":
+            higher_simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
+            if not os.path.exists(higher_simulation_folder):
+                os.makedirs(higher_simulation_folder)
+            simulation_folder = os.path.join(higher_simulation_folder, "loop__" + str(i))
+            if not os.path.exists(simulation_folder):
+                os.makedirs(simulation_folder)
+        else:
+            higher_simulation_folder=""
+            simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed + "__loop__" + str(i))
+            if not os.path.exists(simulation_folder):
+                os.makedirs(simulation_folder)
         function_folder = os.path.join(simulation_folder, "GP_function")
         problem_folder = os.path.join(simulation_folder, problem)
         os.makedirs(function_folder, exist_ok=True)  # Create the problem folder if it doesn't exist
         os.makedirs(problem_folder, exist_ok=True) 
 
-        if num_cuts_per_round == "heuristic" or num_cuts_per_round == "Rl":
-            num_cuts_per_round = "10"
-
         name = f"{problem}_pop_{initial_pop}_nb_gen{nb_of_gen}_seed_{seed}_loop_{i}"
 
-        if i==0:
-            Rll = False
+        if num_cuts_per_round == "heuristic" or num_cuts_per_round == "RL":
+            num_cuts_per_round = num_cuts_per_round_by_default          
 
         main_GP(
             problem=problem,
@@ -140,43 +151,67 @@ if __name__ == "__main__":
             test=SCIP_func_test,
             num_cuts_per_round=num_cuts_per_round,
             parallel=parallel,
-            RL=Rll,
+            RL=load_checkpoint,
+            inputs_type=inputs_type,
+            higher_simulation_folder=higher_simulation_folder,
             heuristic=heuristic
         ) 
-
-        Rll = Rl
 
         # Evaluate the convergence of GP across generations
         gp_function = convergence_of_gp_over_generations(simulation_folder,saving=False, show=False)
 
-        if Rl:            
-            training_path = os.path.join(conf.ROOT_DIR, f"data/{problem}/{training_folder}/")
+        if RL:            
+            if extend_training_instances:
+                training_path = [os.path.join(conf.ROOT_DIR, f"data/{problem}/{training_folder}/"), 
+                                 os.path.join(conf.ROOT_DIR, f"data/{problem}/{more_training_folder}/")]
+            else:
+                training_path = [os.path.join(conf.ROOT_DIR, f"data/{problem}/{training_folder}/")]
+                                
             testing_path = os.path.join(conf.ROOT_DIR, f"data/{problem}/{testing_folder}/")
             nnetwrapper = NeuralNetworkWrapper(training_path=training_path,
                                                 testing_path=testing_path,
-                                                simulation_folder=simulation_folder,
+                                                higher_simulation_folder=higher_simulation_folder,
                                                 problem=problem,
                                                 cut_comp=gp_function,
                                                 parameter_settings=True,
                                                 saving_folder="weights",
                                                 load_checkpoint=load_checkpoint,
+                                                inputs_type=inputs_type,
                                                 sol_path=sol_path,
                                                 )
             nnetwrapper.learn()
 
+
             load_checkpoint = True
+            num_cuts_per_round = "RL"
         
-
-
+    if num_cuts_per_round == "heuristic" or num_cuts_per_round == "RL":
+            num_cuts_per_round = num_cuts_per_round_by_default
 
     gp_function = gp_function if args.GP_function_test == "None" else args.GP_function_test
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
     #print(gp_function, flush=True)
 
-    evaluation_gnn_gp(problem, training_folder, testing_folder, n_test_instances, gp_func_dic, time_limit=time_limit, 
+    json_path = "out.json"
+    if os.path.exists(json_path):
+        os.remove(json_path)
+    if RL:
+        with open(json_path, "w") as f:
+            json.dump({}, f)
+
+    parallel=True
+    if parallel:
+        parallelised_evaluation_gp(problem, training_folder, testing_folder, higher_simulation_folder, n_test_instances, gp_func_dic, 
+                                   time_limit=time_limit, fixedcutsel=GNN_comparison, GNN_transformed=transformed, node_lim=node_lim, 
+                                    sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder,
+                                    num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type, heuristic=heuristic, 
+                                    get_scores=get_scores)
+    else:
+        evaluation_gp(problem, training_folder, testing_folder, higher_simulation_folder, n_test_instances, gp_func_dic, time_limit=time_limit, 
                         fixedcutsel=GNN_comparison, GNN_transformed=transformed, node_lim=node_lim, 
                         sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder,
-                        num_cuts_per_round=num_cuts_per_round, RL=Rl, heuristic=heuristic, get_scores=get_scores)
+                        num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type, heuristic=heuristic, 
+                        get_scores=get_scores)
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=[problem], partitions=[testing_folder], saving_folder=simulation_folder)

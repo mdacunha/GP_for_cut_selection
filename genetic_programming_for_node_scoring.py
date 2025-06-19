@@ -1,7 +1,8 @@
 import math
 import random
 import statistics
-from deap import creator, base, gp, algorithms, tools
+from deap import creator, base, gp, algorithms, tools, creator
+
 import numpy
 import json
 from operator import *
@@ -28,7 +29,7 @@ def evaluate(scoring_function, params):
          str(params["nb_of_instances"]), str(int(params["fixedcutsel"])),
          str(params["node_lim"]), params["sol_path"], str(int(params["transformed"])), 
          str(int(params["test"])), str(params["num_cuts_per_round"]), str(int(params["RL"])),
-         str(int(params["heuristic"]))],
+         params["inputs_type"], params["higher_simulation_folder"], str(int(params["heuristic"]))],
         capture_output=True, text=True)
     mean_solving_time_or_gap = result.stdout.strip()
 
@@ -49,14 +50,15 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
             training_folder="Train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 
             fixedcutsel=False, semantic_algo=False, node_lim=-1, sol_path=None, transformed=False, test=False,
-            num_cuts_per_round=10, parallel=False, RL=False, heuristic=False):
+            num_cuts_per_round=10, parallel=False, RL=False, inputs_type="", higher_simulation_folder="",
+            heuristic=False):
     
     if seed is None:
         seed = math.floor(random.random() * 10000)
     print("seed:", seed, flush=True)
     random.seed(seed)
         
-    pset = gp.PrimitiveSet("main", 6)
+    pset = gp.PrimitiveSet("main", 5)
     pset.addPrimitive(add, 2)
     pset.addPrimitive(sub, 2)
     pset.addPrimitive(mul, 2)
@@ -88,9 +90,10 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
     pset.renameArguments(ARG16="std_obj_values")"""
     pset.addTerminal(10000000)
 
-    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-    creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin,
-                    pset=pset)
+    if "FitnessMin" not in creator.__dict__:
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+    if "Individual" not in creator.__dict__:
+        creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin, pset=pset)
 
     toolbox = base.Toolbox()
     toolbox.register("expr", gp.genGrow, pset=pset, min_=1, max_=17)
@@ -113,7 +116,9 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         "test": test,
         "num_cuts_per_round": num_cuts_per_round,
         "RL": RL,
-        "heuristic": heuristic
+        "inputs_type": inputs_type,
+        "heuristic": heuristic,
+        "higher_simulation_folder": higher_simulation_folder
     }
 
     evaluate_with_params = partial(evaluate, params=params)

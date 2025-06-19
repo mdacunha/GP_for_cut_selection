@@ -21,12 +21,14 @@ if __name__ == "__main__":
     parser.add_argument('test', type=int, help='test mode for SCIP')
     parser.add_argument('num_cuts_per_round', type=int, help='number of cuts per round')
     parser.add_argument('RL', type=int, help='0 ou 1, RL mode')
+    parser.add_argument('inputs_type', type=str, help='inputs_type')
+    parser.add_argument('higher_simulation_folder', type=str, help='higher_simulation_folder')
     parser.add_argument('heuristic', type=int, help='0 ou 1, heuristic mode')
     args = parser.parse_args()
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
     test = bool(args.test)
-    Rl = bool(args.RL)
+    RL = bool(args.RL)
     heuristic = bool(args.heuristic)
     if args.problem in ["gisp", "wpsm", "fcmcnf"]:
         if transformed:
@@ -36,7 +38,8 @@ if __name__ == "__main__":
         meannnodes, mean_val = scip_solver.perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder=lp_dir,
             cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
             node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path, test=test, 
-            num_cuts_per_round=args.num_cuts_per_round, RL=Rl, heuristic=heuristic)
+            num_cuts_per_round=args.num_cuts_per_round, RL=RL, inputs_type=args.inputs_type, 
+            higher_simulation_folder=args.higher_simulation_folder, heuristic=heuristic)
         print(mean_val)
     else:
         random.seed(args.seed)

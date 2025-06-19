@@ -9,6 +9,7 @@ import os
 import json
 from filelock import FileLock
 from num_cut_heuristic import num_cut_heuristic
+from RL.arguments import args
 
 
 def protectedDiv(left, right):
@@ -26,8 +27,8 @@ operations = {
 
 class CustomCutSelector(Cutsel):
 
-    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, nnet=None, is_Test=False, get_scores=False, 
-                 heuristic=False, min_orthogonality_root=0.9, min_orthogonality=0.9):
+    def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, nnet=None, inputs_type="",is_Test=False,
+                 final_test=False, get_scores=False, heuristic=False, min_orthogonality_root=0.9, min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
         self.num_cuts_per_round = num_cuts_per_round
@@ -36,7 +37,9 @@ class CustomCutSelector(Cutsel):
         self.test = test
         self.RL = RL
         self.nnet = nnet
+        self.inputs_type = inputs_type
         self.is_Test = is_Test
+        self.final_test = final_test
         self.get_scores = get_scores
         self.heuristic = heuristic
         random.seed(42)
@@ -64,23 +67,49 @@ class CustomCutSelector(Cutsel):
         n_cuts = len(cuts)
         nselectedcuts = 0
 
+        # Generate the scores of each cut and thereby the maximum score
+        # max_forced_score, forced_scores = self.scoring(forcedcuts)
+        max_non_forced_score, scores = self.scoring(cuts, self.test) 
+
+        if self.final_test:
+            json_path = "out.json"
+            if not os.path.getsize(json_path) == 0:
+                with open(json_path, "r") as f:
+                    data = json.load(f)
+            else:
+                data = {}
+            new_key = f"{len(data)+1}, {sorted(scores, reverse=True)}"  # exemple : run_001, run_002, etc.
+            data[new_key] = None
+            with open(json_path, "w") as f:
+                json.dump(data, f, indent=4)
+
         if root:
             c = 4
         else:
             c = 1
 
         if self.RL:
-            features = self.getfeatures(cuts)
-            
-            if self.is_Test:
-                num_cut = n_cuts * self.nnet.predict(features, mode="test")
+            if self.inputs_type == "only_scores":
+                inputs = [np.array([[score]]) for score in scores]
+            elif self.inputs_type == "only_features":
+                inputs = self.getfeatures(cuts)
+            elif self.inputs_type == "scores_and_features":
+                inputs = self.get_scores_and_features(cuts, scores)
             else:
-                num_cut = n_cuts * self.nnet.predict(features, mode="train")
+                inputs = None
+
+            if self.is_Test and self.final_test:
+                num_cut = n_cuts * self.nnet.predict(inputs, mode="final_test")
+            elif self.is_Test and not self.final_test:
+                num_cut = n_cuts * self.nnet.predict(inputs, mode="test")
+            else:
+                num_cut = n_cuts * self.nnet.predict(inputs, mode="train")
         else:
             num_cut = c * self.num_cuts_per_round
             
         # Get the number of cuts that we will select this round.
         num_cuts_to_select = min(maxnselectedcuts, max(num_cut - len(forcedcuts), 0), n_cuts)
+        #print(num_cuts_to_select)
 
         # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
         # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
@@ -89,11 +118,7 @@ class CustomCutSelector(Cutsel):
             good_max_parallel = max(0.5, max_parallel)
         else:
             max_parallel = 1 - self.min_orthogonality
-            good_max_parallel = max(0.5, max_parallel)
-
-        # Generate the scores of each cut and thereby the maximum score
-        # max_forced_score, forced_scores = self.scoring(forcedcuts)
-        max_non_forced_score, scores = self.scoring(cuts, self.test)       
+            good_max_parallel = max(0.5, max_parallel)      
 
         if self.get_scores:
             print("scores.json", num_cuts_to_select, scores)
@@ -173,19 +198,20 @@ class CustomCutSelector(Cutsel):
                 except ValueError:
                     return context[expr]
                     
-        scores = [0] * len(cuts)
+        scores = [0.0] * len(cuts)
         max_score = 0.0
            
         for i, cut in enumerate(cuts):      
-            context = self.getcontext(cut, ind=0)
-
             if not test:
+                context = self.getcontext(cut, ind=0)
                 score = evaluate_expression(self.comp_policy, context)
             else:
                 efficacy_weight=1.0
                 objparal_weight=0.1
                 intsupport_weight=0.1
                 dircutoffdist_weight=0.0
+
+                context = self.getcontext(cut, ind=1)
 
                 # Score pondéré
                 score = (
@@ -209,6 +235,13 @@ class CustomCutSelector(Cutsel):
         for cut in cuts:
             context = self.getcontext(cut, ind=2)
             features.append(np.array([[context[key] for key in context.keys()]]))
+        return features
+    
+    def get_scores_and_features(self, cuts, scores):
+        features = []
+        for i, cut in enumerate(cuts):
+            context = self.getcontext(cut, ind=2)
+            features.append(np.array([[scores[i]] + [context[key] for key in context.keys()]]))
         return features
 
     def getcontext(self, cut, ind=1):
@@ -326,8 +359,8 @@ class CustomCutSelector(Cutsel):
                     'mean_obj_values' : get_obj_coeff_stats(self.model)['mean'],
                     'max_obj_values' : get_obj_coeff_stats(self.model)['max'],
                     'min_obj_values' : get_obj_coeff_stats(self.model)['min'],
-                    'std_obj_values' : get_obj_coeff_stats(self.model)['std'],
-                    "10000000":10000000
+                    'std_obj_values' : get_obj_coeff_stats(self.model)['std']
+                    #"10000000":10000000
                 }
 
         return context

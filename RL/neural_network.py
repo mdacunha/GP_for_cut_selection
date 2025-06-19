@@ -1,18 +1,30 @@
 import os
 import numpy as np
+import json
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 class nnet(nn.Module):
-    def __init__(self, args, input_dim=17, embed_dim=64, lstm_hidden_dim=128):
+    def __init__(self, args):
         super(nnet, self).__init__()
 
         self.args = args
 
+        if args["inputs_type"] == "only_scores":
+            input_dim = 1
+        elif args["inputs_type"] == "only_features":
+            input_dim = 17
+        elif args["inputs_type"] == "scores_and_features":
+            input_dim = 18
+            
+        embed_dim=self.args['embed_dim']
+        lstm_hidden_dim=self.args['lstm_hidden_dim']
+
         # 1. Projection des features d'entrée (17D → embed_dim)
         self.embedding = nn.Linear(input_dim, embed_dim)
+        self.ReLU = nn.ReLU()
 
         # 2. Encodeur séquentiel (LSTM unidirectionnel)
         self.lstm = nn.LSTM(embed_dim, lstm_hidden_dim, batch_first=True)
@@ -27,10 +39,11 @@ class nnet(nn.Module):
         :param sample: bool, si True on échantillonne un ratio k, sinon on renvoie µ
         :return: k ∈ [0,1], µ ∈ ℝ, σ ∈ ℝ⁺
         """
-        N = features.size(0)  # nombre de coupes candidates
+        #N = features.size(0)  # nombre de coupes candidates
 
         # Étape 1 : Embed les vecteurs 17D → d
         x = self.embedding(features)  # [N, embed_dim]
+        x = self.ReLU(x)
         x = x.unsqueeze(0)  # [1, N, embed_dim] → batch_size=1 pour LSTM
 
         # Étape 2 : Encodeur LSTM → dernier état caché
@@ -59,13 +72,24 @@ class nnet(nn.Module):
             features = np.concatenate(features, axis=0)
             features = torch.FloatTensor(features.astype(np.float64))
             if self.args["cuda"]: features = features.contiguous().cuda()
-            features = features.view(features.size(0), self.args["num_inputs"])
+            #features = features.view(features.size(0), self.args["num_inputs"])
             if mode=="train":
                 self.train()
-                k = self.forward(features, sample=False)  # k ∈ [0, 1]
+                k = self.forward(features, sample=True)  # k ∈ [0, 1]
                 return int(k.detach().cpu().numpy()[0])
-            elif mode=="test":
+            elif mode=="test" or mode=="final_test":
                 self.eval()
                 with torch.no_grad():
                     k = self.forward(features, sample=False)  # k ∈ [0, 1]
-                return int(k.cpu().numpy()[0])
+                k = int(k.cpu().numpy()[0])
+                if mode=="final_test":
+                    json_path = "out.json"
+                    with open(json_path, "r") as f:
+                        data = json.load(f)
+                    last_key = list(data.keys())[-1]
+                    data[last_key] = {
+                            "k": k
+                        }
+                    with open(json_path, "w") as f:
+                        json.dump(data, f, indent=4)
+                return k

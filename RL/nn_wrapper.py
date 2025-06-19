@@ -10,69 +10,71 @@ import torch.optim as optim
 
 from RL.neural_network import nnet
 from scip_solver import perform_SCIP_instance
+from RL.arguments import args
 
-args = {
-    'lr': 0.00005,
-    'dropout': 0.3,
-    'epochs': 10,
-    'batch_size': 64,
-    'cuda': torch.cuda.is_available(),
-    'num_channels': 512,
-    'num_inputs': 17,
-}
+import multiprocessing
+from functools import partial
 
 class NeuralNetworkWrapper():
-    def __init__(self, training_path, testing_path, simulation_folder="", problem="gisp", cut_comp="", parameter_settings=False,
-                    saving_folder="", load_checkpoint=False, sol_path=None):
+    def __init__(self, training_path="", testing_path="", higher_simulation_folder="", problem="gisp", cut_comp="", 
+                 parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None):
         
-        self.nnet = nnet(args)
+        new_args = args
+        self.inputs_type = inputs_type
+        new_args.update({
+                'inputs_type': self.inputs_type
+            })
+        self.nnet = nnet(new_args)
         self.training_path = training_path
         self.testing_path = testing_path
-        self.simulation_folder = simulation_folder
+        self.higher_simulation_folder = higher_simulation_folder
         self.problem = problem
         self.cut_comp = cut_comp
         self.parameter_settings = parameter_settings
         self.saving_folder = saving_folder
         self.sol_path = sol_path
         if load_checkpoint:
-            self.load_checkpoint(folder=self.simulation_folder, filename=self.saving_folder)
+            self.load_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
         if args["cuda"]:
             self.nnet.cuda()     
 
     def learn(self):
-        test_score = np.inf
+        best_test_score = np.inf
         for epoch in range(args["epochs"]):
-            print('EPOCH ::: ' + str(epoch + 1))
+            print('EPOCH ::: ' + str(epoch + 1), flush=True)
             self.train()
-            score = self.test()
-            if score < test_score:
-                test_score = score
-                self.save_checkpoint(folder=self.simulation_folder, filename=self.saving_folder)
+            test_score = self.test()
+            print("Loss for test instances :", test_score, flush=True)
+            if test_score < best_test_score:
+                best_test_score = test_score
+                print("saving model...", flush=True)
+                self.save_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
 
     def train(self):
 
-        optimizer = optim.Adam(self.nnet.parameters())
+        optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'])
 
-        geo_mean_score = AverageMeter()
+        instances = [os.path.join(self.training_path[0], f) for f in os.listdir(self.training_path[0])]
+        if len(self.training_path)>1:
+            instances += [os.path.join(self.training_path[1], f) for f in os.listdir(self.training_path[1])]
 
-        batch_count = 1 #int(len(examples) / args.batch_size)
+        batch_count = int(len(instances) / args['batch_size']) + (len(instances) % args['batch_size'] != 0)
+        t = tqdm(range(batch_count), desc="Training Net")
+        for i in t:
+            instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "train") 
+                            for instance in instances[i * args['batch_size'] : (i+1) * args['batch_size']]]
+            with multiprocessing.Pool(processes=min(multiprocessing.cpu_count(), len(instances))) as pool:
+                results = pool.map(self.process_instance, instance_args)
+            
+            examples = [r for r in results if r is not None]
+            if not examples:
+                print("Aucun exemple valide trouvé.")
+                return
+        
 
-        t = tqdm(range(batch_count), desc='Training Net')
-        for _ in t:
-            examples = []
-            for instance in os.listdir(self.training_path):
-                if instance.endswith(".lp") or instance.endswith(".mps"):
-                    instance_path = os.path.join(self.training_path, instance)
-
-                    _, time_or_gap = perform_SCIP_instance(instance_path, self.cut_comp,
-                                                            parameter_settings=self.parameter_settings,
-                                                            sol_path=self.sol_path, RL=True, nnet=self.nnet,
-                                                            )
-
-                    examples.append(time_or_gap)
-                    score = shifted_geo_mean(examples)
-                    geo_mean_score.update(score)
-
+            score = shifted_geo_mean(examples)
+        
+            t.set_postfix(Loss=float(score))
             
             score = torch.tensor(score, dtype=torch.float64, requires_grad=True)
 
@@ -81,32 +83,62 @@ class NeuralNetworkWrapper():
 
             total_loss = score
 
-            t.set_postfix(Loss=int(score))
-
             # compute gradient and do SGD step
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
     
     def test(self):
-        geo_mean_score = AverageMeter()
+
         examples = []
-        for instance in os.listdir(self.testing_path):
-            if instance.endswith(".lp") or instance.endswith(".mps"):
-                instance_path = os.path.join(self.testing_path, instance)
+        size_train_set = len(os.listdir(self.training_path[0])) 
+        if len(self.training_path)>1:
+            size_train_set += len(os.listdir(self.training_path[1]))
+        instances = [os.path.join(self.testing_path, f) for f in os.listdir(self.testing_path)][:int(0.2 * size_train_set)]
 
-                _, time_or_gap = perform_SCIP_instance(instance_path, self.cut_comp,
-                                                        parameter_settings=self.parameter_settings,
-                                                        sol_path=self.sol_path, is_Test=True, 
-                                                        RL=True, nnet=self.nnet                                                        
-                                                        )
+        instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "test") for instance in instances]
+        
+        with multiprocessing.Pool(processes=min(multiprocessing.cpu_count(), len(instances))) as pool:
+            results = pool.map(self.process_instance, instance_args)
+        
+        examples = [r for r in results if r is not None]
+        if not examples:
+            print("Aucun exemple valide trouvé.")
+            return
+        
 
-                examples.append(time_or_gap)
-                score = shifted_geo_mean(examples)
-                geo_mean_score.update(score)
+        score = shifted_geo_mean(examples)
 
         return score
 
+    def process_instance(self, instance_args):
+        instance_path, cut_comp, parameter_settings, sol_path, inputs_type, nnet, mode = instance_args
+        if instance_path.endswith(".lp") or instance_path.endswith(".mps"):
+            if mode=="train":
+                _, time_or_gap = perform_SCIP_instance(
+                    instance_path, 
+                    cut_comp,
+                    parameter_settings=parameter_settings,
+                    sol_path=sol_path,
+                    RL=True,
+                    inputs_type=inputs_type,
+                    nnet=nnet
+                )
+            elif mode=="test":
+                _, time_or_gap = perform_SCIP_instance(
+                instance_path,
+                cut_comp,
+                parameter_settings=parameter_settings,
+                sol_path=sol_path,
+                is_Test=True,
+                RL=True,
+                inputs_type=inputs_type,
+                nnet=nnet
+            )
+            return time_or_gap
+        else:
+            return None
+    
     def save_checkpoint(self, folder='', filename='checkpoint', replace=True):
         filepath = os.path.join(folder, filename)
         if replace:
@@ -117,27 +149,9 @@ class NeuralNetworkWrapper():
             print("WARNING : not saving file", flush=True)
 
     def load_checkpoint(self, folder='', filename='checkpoint'):
-        filepath = os.path.join(folder, filename)
+        filepath = os.path.join(folder, filename + ".pth.tar")
         if not os.path.exists(filepath):
             raise ("No model in path {}".format(filepath))
         map_location = None if args["cuda"] else 'cpu'
-        checkpoint = torch.load(filepath, map_location=map_location)
+        checkpoint = torch.load(filepath, map_location=map_location, weights_only=True)
         self.nnet.load_state_dict(checkpoint['state_dict'])
-
-class AverageMeter(object):
-    """From https://github.com/pytorch/examples/blob/master/imagenet/main.py"""
-
-    def __init__(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def __repr__(self):
-        return f'{self.avg:.2e}'
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
