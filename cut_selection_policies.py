@@ -203,7 +203,7 @@ class CustomCutSelector(Cutsel):
            
         for i, cut in enumerate(cuts):      
             if not test:
-                context = self.getcontext(cut, ind=1)
+                context = self.getcontext(cut, ind=0)
                 score = evaluate_expression(self.comp_policy, context)
             else:
                 efficacy_weight=1.0
