@@ -78,6 +78,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
                                              nnet=nnet, inputs_type=inputs_type, is_Test=is_Test, final_test=final_test,
                                              get_scores=get_scores, heuristic=heuristic)
             model.includeCutsel(cut_selector, "", "", 536870911)
+            
 
     if fixedcutsel:
         model.setHeuristics(SCIP_PARAMSETTING.OFF)

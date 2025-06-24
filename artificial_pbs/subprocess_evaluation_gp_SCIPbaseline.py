@@ -69,13 +69,18 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
 
             perfs[instance[:len(instance) - 3]] = [nb_nodes, time]
 
+    instance_folder = os.path.join(os.path.abspath('')[:len(os.path.abspath(''))],  # - 25
+                                    f'{saving_folder}/{problem}/temp/{instance}')
+    if not os.path.exists(instance_folder):
+        os.makedirs(instance_folder, exist_ok=True)
+        
     if func_name is None:
         new_json_dir = os.path.join(os.path.abspath('')[:len(os.path.abspath(''))],  # - 25
-                                    f'{saving_folder}/{problem}/{testing_folder}_{function}.json')
+                                    f'{saving_folder}/{problem}/temp/{instance}/{testing_folder}_{function}.json')
         print("perfs are done for the function ", function, flush=True)
     else:
         new_json_dir = os.path.join(os.path.abspath('')[:len(os.path.abspath(''))],  # - 25
-                                    f'{saving_folder}/{problem}/{testing_folder}_{func_name}.json')
+                                    f'{saving_folder}/{problem}/temp/{instance}/{testing_folder}_{func_name}.json')
         print("perfs are done for the function ", func_name, flush=True)
 
     with open(new_json_dir,

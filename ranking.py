@@ -51,6 +51,7 @@ def parse_filename(filename):
 def main(directory):
     data = []
     full=True
+    failed_pb = []
 
     for filename in os.listdir(directory):
         if filename.endswith('.out'):
@@ -67,17 +68,23 @@ def main(directory):
                     })
                 else:
                     full=False
+                    failed_pb.append({
+                        "problem": problem,
+                        "nb_cuts": nb_cuts,
+                        "seed": seed,
+                    })
 
     df = pd.DataFrame(data)
     df_sorted = df.sort_values(by=["score"], ascending=False).reset_index(drop=True)
-    return df_sorted, full
+    return df_sorted, full, failed_pb
 
 def find(df, pb, nb_cuts, seed):
 
     return df[(df['problem'] == pb) & (df['nb_cuts'] == nb_cuts) & (df['seed'] == seed)]
 
 def plot_evolution_with_point(dfs, folder, lowbound=-np.inf, mean=True, median=False, points=True, show=False, save=False, compare=False):
-
+    if compare==True:
+        save=False
     plt.figure(figsize=(10, 6))
     for df in dfs:
         df = df[df["score"] >= lowbound]
@@ -141,7 +148,7 @@ if __name__ == "__main__":
         directory = os.path.abspath(directory_)
 
         df_result = []
-        df, full = main(directory)
+        df, full, failed_pb = main(directory)
         df_result.append(df)
         
         folder = f"{directory_[3:]}_results"
@@ -150,6 +157,7 @@ if __name__ == "__main__":
             os.makedirs(folder)
 
         table_name = "full_results.csv" if full else "results.csv"
+
         d = df.copy()
         d["nb_cuts"] = d["nb_cuts"].replace(90, "heuristic")
         d["nb_cuts"] = d["nb_cuts"].replace(100, "RL")
@@ -157,9 +165,10 @@ if __name__ == "__main__":
     else:
         compare = True
         df_result = []
+        folder=None
         for directory_ in directories:
             directory = os.path.abspath(directory_)
-            df, full = main(directory)
+            df, full, failed_pb = main(directory)
 
             df_result.append(df)
 
@@ -167,16 +176,16 @@ if __name__ == "__main__":
     # Use :
 
     plot_evolution_with_point(df_result, folder, 
-                              lowbound=-0.4, mean=True, median=False, points=True, show=True, save=True, compare=compare)
+                              lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=True, compare=compare)
 
     #print(df_result.to_string(index=False))
 
     #print(find(df_result, 'gisp', 5, 0))
 
+    #print(failed_pb)
 
 
 
 
 
-
-#python ranking.py ../logs_ind_0_heuristic
+#python ranking.py ../logs_ind_1_heuristic

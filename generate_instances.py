@@ -6,8 +6,8 @@ from data import build_gisp_instances, build_wpsm_instances, build_fcmcnf_instan
 if __name__ == "__main__":
     # Note: The construction of the instance reuses the code by Labassi et al. on Graph Neural Networks.
     # Parameters for instance generation
-    problems = ["gisp", "wpsm", "fcmcnf"]  # List of problems to generate instances for
-    extend_training_instances = True
+    problems = ["gisp"]#, "wpsm", "fcmcnf"]  # List of problems to generate instances for
+    extend_training_instances = False
 
     for problem in problems:
         if problem=="gisp" or problem=="wpsm":
@@ -30,14 +30,14 @@ if __name__ == "__main__":
         setparam = 100  # Parameter related to "revenues"
         alphaE2 = 0.5  # Probability of building an edge
 
-        """########### SMALL PARAM FOR TESTING ###########
+        ########### SMALL PARAM FOR TESTING ###########
         n=5
         n_test=5
         min_n_train=30
         max_n_train=40
         min_n_test = min_n_train
         max_n_test = max_n_train
-        ########### SMALL PARAM FOR TESTING ###########"""
+        ########### SMALL PARAM FOR TESTING ###########
 
         if extend_training_instances:
             training_file_list = [f"data/{problem}/train", f"data/{problem}/more_train"]

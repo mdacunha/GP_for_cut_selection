@@ -21,6 +21,8 @@ if __name__ == "__main__":
     parser.add_argument('GP_function_test', type=str, help="Testing folder")
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
+
+    #python main.py "gisp" "5" "0" "only_scores" None None
     
     # Parameters for GP_function training
     problem = args.problem  # Problem type
@@ -116,11 +118,11 @@ if __name__ == "__main__":
                 os.makedirs(simulation_folder)
         else:
             higher_simulation_folder=""
-            simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed + "__loop__" + str(i))
+            simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
             if not os.path.exists(simulation_folder):
                 os.makedirs(simulation_folder)
         function_folder = os.path.join(simulation_folder, "GP_function")
-        problem_folder = os.path.join(simulation_folder, problem)
+        problem_folder = os.path.join(simulation_folder, problem, "temp")
         os.makedirs(function_folder, exist_ok=True)  # Create the problem folder if it doesn't exist
         os.makedirs(problem_folder, exist_ok=True) 
 

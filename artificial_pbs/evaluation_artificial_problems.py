@@ -85,7 +85,7 @@ def parallelised_evaluation_gp(problem, training_folder, testing_folder, higher_
             if done == nb_of_test_instances:
                 print("everything is solved", flush=True)
                 print(evaluation)
-                dir = os.path.join(conf.ROOT_DIR, f'{saving_folder}/{problem}/')
+                dir = os.path.join(conf.ROOT_DIR, f'{saving_folder}/{problem}/temp/{instance}/')
                 for one_perf_file in os.listdir(dir):
                     if re.match(testing_folder, one_perf_file):
                         method = one_perf_file[len(testing_folder) + 1: len(one_perf_file) - 5]
@@ -131,7 +131,7 @@ def run_instance(instance_and_params):
         print(f"[{instance}] stderr:", result.stderr, flush=True)
         return None
 
-    dir = os.path.join(conf.ROOT_DIR, f'{params["saving_folder"]}/{params["problem"]}/')
+    dir = os.path.join(conf.ROOT_DIR, f'{params["saving_folder"]}/{params["problem"]}/temp/{instance}/')
     one_result = {}
     for one_perf_file in os.listdir(dir):
         if re.match(params["testing_folder"], one_perf_file):
@@ -212,7 +212,7 @@ def evaluation_gp(problem, training_folder, testing_folder, higher_simulation_fo
                 done+=1
                 print("one is done, with total of ",done, flush=True)
                 dir = os.path.join(conf.ROOT_DIR,  # - 25
-                                   f'{saving_folder}/{problem}/')
+                                   f'{saving_folder}/{problem}/temp/{instance}/')
                 for one_perf_file in os.listdir(dir):
                     if re.match(testing_folder, one_perf_file):
                         method = one_perf_file[len(testing_folder)+1: len(one_perf_file) - 5]
@@ -232,6 +232,7 @@ def evaluation_gp(problem, training_folder, testing_folder, higher_simulation_fo
                             method = one_perf_file[len(testing_folder) + 1: len(one_perf_file) - 5]
                             new_json_dir = os.path.join(conf.ROOT_DIR,  # - 25
                                                         f'{saving_folder}/{problem}/{testing_folder}_{method}.json')
+                            
                             with open(new_json_dir,
                                         "w+") as outfile:
                                 json.dump(evaluation[method], outfile)

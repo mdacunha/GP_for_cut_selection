@@ -58,13 +58,13 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
     print("seed:", seed, flush=True)
     random.seed(seed)
         
-    pset = gp.PrimitiveSet("main", 5)
+    pset = gp.PrimitiveSet("main", 9)
     pset.addPrimitive(add, 2)
     pset.addPrimitive(sub, 2)
     pset.addPrimitive(mul, 2)
     pset.addPrimitive(protectedDiv, 2)  # Attention, il faut définir cette fonction ou l'importer
     
-    """pset.renameArguments(ARG0="getDepth")
+    pset.renameArguments(ARG0="getDepth")
     pset.renameArguments(ARG1="getNConss")
     pset.renameArguments(ARG2="getNVars")
     pset.renameArguments(ARG3="getNNonz")
@@ -72,13 +72,13 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
     pset.renameArguments(ARG6="getNumIntCols")
     pset.renameArguments(ARG5="getCutLPSolCutoffDistance")
     pset.renameArguments(ARG7="getObjParallelism")    
-    pset.renameArguments(ARG8="getCutViolation")  """
+    pset.renameArguments(ARG8="getCutViolation")  
 
-    pset.renameArguments(ARG0="getEfficacy")
+    """pset.renameArguments(ARG0="getEfficacy")
     pset.renameArguments(ARG1="getNumIntCols")
     pset.renameArguments(ARG2="getCutLPSolCutoffDistance")
     pset.renameArguments(ARG3="getObjParallelism")    
-    pset.renameArguments(ARG4="getCutViolation")  
+    pset.renameArguments(ARG4="getCutViolation") """ 
 
     """pset.renameArguments(ARG9="mean_cut_values")
     pset.renameArguments(ARG10="max_cut_values")

@@ -76,12 +76,12 @@ class nnet(nn.Module):
             if mode=="train":
                 self.train()
                 k = self.forward(features, sample=True)  # k ∈ [0, 1]
-                return int(k.detach().cpu().numpy()[0])
+                return k
             elif mode=="test" or mode=="final_test":
                 self.eval()
                 with torch.no_grad():
                     k = self.forward(features, sample=False)  # k ∈ [0, 1]
-                k = int(k.cpu().numpy()[0])
+                k = k.cpu().numpy()[0]
                 if mode=="final_test":
                     json_path = "out.json"
                     with open(json_path, "r") as f:

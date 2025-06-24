@@ -61,12 +61,14 @@ class NeuralNetworkWrapper():
         batch_count = int(len(instances) / args['batch_size']) + (len(instances) % args['batch_size'] != 0)
         t = tqdm(range(batch_count), desc="Training Net")
         for i in t:
+            optimizer.zero_grad()
+
             instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "train") 
                             for instance in instances[i * args['batch_size'] : (i+1) * args['batch_size']]]
             with multiprocessing.Pool(processes=min(multiprocessing.cpu_count(), len(instances))) as pool:
                 results = pool.map(self.process_instance, instance_args)
             
-            examples = [r for r in results if r is not None]
+            examples = [(r,k) for (r,k) in results if r is not None]
             if not examples:
                 print("Aucun exemple valide trouvé.")
                 return
