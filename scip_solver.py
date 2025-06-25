@@ -112,8 +112,10 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             bd = model.getGap()
             score = (sd["gap"] - bd) / (abs(sd["gap"]) + 1e-8)
             return model.getNNodes(), score
-        return model.getNNodes(), model.getGap()
-    return model.getNNodes(), model.getSolvingTime()
+        return model.getNNodes(), model.getGap(), cut_selector.k_list()
+    if cut_comp == "SCIP":
+        return model.getNNodes(), model.getSolvingTime(), None
+    return model.getNNodes(), model.getSolvingTime(), cut_selector.k_list()
 
 
 def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_comp="estimate", node_select="BFS",
@@ -141,7 +143,7 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
 
                 instance_path = os.path.join(os.path.dirname(__file__), instances_folder + "/" + str(instance))
 
-                visited_nodes, time_or_gap = perform_SCIP_instance(instance_path, cut_comp, node_select,
+                visited_nodes, time_or_gap, _ = perform_SCIP_instance(instance_path, cut_comp, node_select,
                                                                    parameter_settings=parameter_settings,
                                                                    time_limit=time_limit, fixedcutsel=fixedcutsel, 
                                                                    node_lim=node_lim, sol_path=sol_path, test=test,

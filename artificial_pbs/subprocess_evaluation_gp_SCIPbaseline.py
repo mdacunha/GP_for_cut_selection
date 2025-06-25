@@ -60,7 +60,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
     for instance in instances:
         if instance[len(instance) - 3:] == ".lp" or instance[len(instance) - 4:] == ".mps":
             instance_path = path +'/'+ str(instance)
-            nb_nodes,time = perform_SCIP_instance(instance_path, cut_comp=comp_policy, node_select=sel_policy,
+            nb_nodes, time, _ = perform_SCIP_instance(instance_path, cut_comp=comp_policy, node_select=sel_policy,
                                                    parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    is_Test=True, final_test=True, num_cuts_per_round=num_cuts_per_round, 

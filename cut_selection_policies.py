@@ -10,7 +10,7 @@ import json
 from filelock import FileLock
 from num_cut_heuristic import num_cut_heuristic
 from RL.arguments import args
-
+import torch
 
 def protectedDiv(left, right):
     try:
@@ -42,6 +42,8 @@ class CustomCutSelector(Cutsel):
         self.final_test = final_test
         self.get_scores = get_scores
         self.heuristic = heuristic
+
+        self.ks = []
         random.seed(42)
     
     def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
@@ -69,9 +71,9 @@ class CustomCutSelector(Cutsel):
 
         # Generate the scores of each cut and thereby the maximum score
         # max_forced_score, forced_scores = self.scoring(forcedcuts)
-        max_non_forced_score, scores = self.scoring(cuts, self.test) 
+        max_non_forced_score, scores = self.scoring(cuts, self.test)
 
-        if self.final_test and self.RL:
+        if self.final_test and self.RL and False:
             json_path = "out.json"
             if not os.path.getsize(json_path) == 0:
                 with open(json_path, "r") as f:
@@ -100,11 +102,15 @@ class CustomCutSelector(Cutsel):
 
             if self.is_Test and self.final_test:
                 self.k = self.nnet.predict(inputs, mode="final_test")
+                num_cut = round(n_cuts * self.k)
+                #print("IIIIIIIICCCCCCCCCCCCCCIIIIIIII", self.k, num_cut)
             elif self.is_Test and not self.final_test:
                 self.k = self.nnet.predict(inputs, mode="test")
+                num_cut = round(n_cuts * self.k)
             else:
                 self.k = self.nnet.predict(inputs, mode="train")
-            num_cut = n_cuts * self.k
+                self.ks.append(self.k)
+                num_cut = int(torch.round(n_cuts * self.k))
         else:
             num_cut = c * self.num_cuts_per_round
             
@@ -163,11 +169,8 @@ class CustomCutSelector(Cutsel):
         return {'cuts': cuts, 'nselectedcuts': nselectedcuts,
                 'result': SCIP_RESULT.SUCCESS}
     
-    def return_k(self):
-        if self.k is not None : 
-            return self.k
-        else:
-            raise ValueError
+    def k_list(self):
+        return self.ks
 
     def scoring(self, cuts, test=False):
 

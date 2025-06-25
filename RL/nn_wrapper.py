@@ -13,6 +13,7 @@ from scip_solver import perform_SCIP_instance
 from RL.arguments import args
 
 import multiprocessing
+import torch.multiprocessing as mp
 from functools import partial
 
 class NeuralNetworkWrapper():
@@ -61,34 +62,39 @@ class NeuralNetworkWrapper():
         batch_count = int(len(instances) / args['batch_size']) + (len(instances) % args['batch_size'] != 0)
         t = tqdm(range(batch_count), desc="Training Net")
         for i in t:
-            optimizer.zero_grad()
+            results = []
+            for instance in instances[i * args['batch_size'] : (i+1) * args['batch_size']]:
+                instance_args = (instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "train") 
+           
+                """with mp.Pool(processes=min(mp.cpu_count(), len(instances))) as pool:
+                    results = pool.map(self.process_instance, instance_args)
+                """
 
-            instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "train") 
-                            for instance in instances[i * args['batch_size'] : (i+1) * args['batch_size']]]
-            with multiprocessing.Pool(processes=min(multiprocessing.cpu_count(), len(instances))) as pool:
-                results = pool.map(self.process_instance, instance_args)
-            
-            examples = [(r,k) for (r,k) in results if r is not None]
-            if not examples:
-                print("Aucun exemple valide trouvé.")
-                return
-        
+                r, k_list = self.process_instance(instance_args)
+                results.append((r,k_list))
 
-            score = shifted_geo_mean(examples)
+
+            """k_l = results[0][1][0]
+            print("1st", k_l.grad_fn)
+            print("11st", k_l.requires_grad)"""
+
+            losses = [-r * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (r, k_list) in results]
+
+            loss = torch.stack(losses).mean()
+
+            score = shifted_geo_mean([r for (r, k_list) in results])
         
-            t.set_postfix(Loss=float(score))
-            
-            score = torch.tensor(score, dtype=torch.float64, requires_grad=True)
+            t.set_postfix(score=float(score))
 
             if args["cuda"]:
-                score = score.contiguous().cuda()
-
-            total_loss = score
+                loss = loss.contiguous().cuda()
 
             # compute gradient and do SGD step
             optimizer.zero_grad()
-            total_loss.backward()
+            loss.backward()
             optimizer.step()
+
+
     
     def test(self):
 
@@ -103,7 +109,7 @@ class NeuralNetworkWrapper():
         with multiprocessing.Pool(processes=min(multiprocessing.cpu_count(), len(instances))) as pool:
             results = pool.map(self.process_instance, instance_args)
         
-        examples = [r for r in results if r is not None]
+        examples = [r for (r, _) in results if r is not None]
         if not examples:
             print("Aucun exemple valide trouvé.")
             return
@@ -117,7 +123,7 @@ class NeuralNetworkWrapper():
         instance_path, cut_comp, parameter_settings, sol_path, inputs_type, nnet, mode = instance_args
         if instance_path.endswith(".lp") or instance_path.endswith(".mps"):
             if mode=="train":
-                _, time_or_gap = perform_SCIP_instance(
+                _, time_or_gap, k_list = perform_SCIP_instance(
                     instance_path, 
                     cut_comp,
                     parameter_settings=parameter_settings,
@@ -127,7 +133,7 @@ class NeuralNetworkWrapper():
                     nnet=nnet
                 )
             elif mode=="test":
-                _, time_or_gap = perform_SCIP_instance(
+                _, time_or_gap, k_list = perform_SCIP_instance(
                 instance_path,
                 cut_comp,
                 parameter_settings=parameter_settings,
@@ -137,9 +143,9 @@ class NeuralNetworkWrapper():
                 inputs_type=inputs_type,
                 nnet=nnet
             )
-            return time_or_gap
+            return time_or_gap, k_list
         else:
-            return None
+            return None, k_list
     
     def save_checkpoint(self, folder='', filename='checkpoint', replace=True):
         filepath = os.path.join(folder, filename)

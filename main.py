@@ -197,7 +197,7 @@ if __name__ == "__main__":
     json_path = "out.json"
     if os.path.exists(json_path):
         os.remove(json_path)
-    if RL:
+    if RL and False:
         with open(json_path, "w") as f:
             json.dump({}, f)
 

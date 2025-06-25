@@ -3,7 +3,7 @@ import numpy as np
 import scipy
 import json
 import math
-
+import torch
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -14,6 +14,18 @@ def shifted_geo_mean(iterable,shift=1,rounding=2):
     if rounding == 0:
         return round(np.exp(np.mean(np.log(np.array(iterable) + shift))) - shift)
     return round(np.exp(np.mean(np.log(np.array(iterable) + shift ))) - shift,rounding)
+
+def shifted_geo_mean_grad(tensor,shift=1.0,rounding=2):
+    shifted = tensor + shift
+    log_mean = torch.mean(torch.log(shifted))
+    geo_mean = torch.exp(log_mean) - shift
+
+    if rounding is not None:
+        factor = 10 ** rounding
+        geo_mean = torch.round(geo_mean * factor) / factor
+
+    return geo_mean
+
 def geo_std(a,rounding=1):
     if rounding == 0:
         return round(np.exp(np.sqrt(np.mean((np.log(np.array(a) + 1) - np.log(shifted_geo_mean(a, 1))) ** 2))))

@@ -30,21 +30,29 @@ def extract_values_from_file(filepath):
         return None
 
 def parse_filename(filename):
-    # exemple : job_MIPLIB2017_heuristic_1.out ou job_MIPLIB2017_40_1.out
-    match = re.match(r'job_([^_]+)_([^_]+)_([0-9]+)\.out', filename)
+    match = re.match(r'job_([^_]+)_([^_]+)_([0-9]+)(?:_([^_]+))?\.out', filename)
     if match:
         problem = match.group(1)
-        nb_cuts = match.group(2)  # peut être une chaîne ou un nombre
-        try:
-            nb_cuts = int(nb_cuts)
-        except ValueError:
-            pass  # reste une chaîne si ce n’est pas convertible
-        if nb_cuts == "heuristic":
-            nb_cuts = 90
-        elif nb_cuts == "RL":
-            nb_cuts = 100
+        nb_cuts = match.group(2)
         seed = int(match.group(3))
-        return problem, nb_cuts, seed
+        inputs = match.group(4)  # None si non présent
+
+        try:
+            nb_cuts_int = int(nb_cuts)
+        except ValueError:
+            if nb_cuts == "heuristic":
+                nb_cuts_int = 90
+            elif nb_cuts == "RL":
+                if inputs == "only_scores":
+                    nb_cuts_int = 110
+                elif inputs == "only_features":
+                    nb_cuts_int = 120
+                elif inputs == "scores_and_features":
+                    nb_cuts_int = 130
+                else:
+                    nb_cuts_int = 100  # Valeur par défaut pour RL si inputs est inconnu
+
+        return problem, nb_cuts_int, seed
     else:
         return None, None, None
 
@@ -86,6 +94,7 @@ def plot_evolution_with_point(dfs, folder, lowbound=-np.inf, mean=True, median=F
     if compare==True:
         save=False
     plt.figure(figsize=(10, 6))
+    all_cut_values = set()
     for df in dfs:
         df = df[df["score"] >= lowbound]
 
@@ -94,6 +103,7 @@ def plot_evolution_with_point(dfs, folder, lowbound=-np.inf, mean=True, median=F
         color_map = dict(zip(problems, palette))
 
         cut_values = sorted(df["nb_cuts"].unique())
+        all_cut_values.update(cut_values)
         
         # Définir un petit offset horizontal pour chaque problème
         offsets = np.linspace(-0.8, 0.8, len(problems))
@@ -116,6 +126,33 @@ def plot_evolution_with_point(dfs, folder, lowbound=-np.inf, mean=True, median=F
                 sub_df["nb_cuts_jittered"] = sub_df["nb_cuts"] + offsets[i]
                 plt.scatter(sub_df["nb_cuts_jittered"], sub_df["score"] * 100,
                             label=f"Points - {problem}", color=color_map[problem], alpha=0.6, s=40, marker='x')
+    """special_labels = {
+        90: "90 = Heuristic",
+        110: "110 = RL + only_scores",
+        120: "120 = RL + only_features",
+        130: "130 = RL + scores_and_features"
+    }
+    for val, label in special_labels.items():
+        if val in all_cut_values:
+            plt.plot([], [], ' ', label=label)"""
+
+    explanations = []
+    if 90 in all_cut_values:
+        explanations.append("90 = heuristic")
+    if 110 in all_cut_values:
+        explanations.append("110 = RL + only_scores")
+    if 120 in all_cut_values:
+        explanations.append("120 = RL + only_features")
+    if 130 in all_cut_values:
+        explanations.append("130 = RL + scores_and_features")
+
+    # Afficher une seule étiquette centrée en bas du graphe
+    if explanations:
+        explanation_text = " | ".join(explanations)
+        plt.text(0.45, 0.20, explanation_text,
+                transform=plt.gca().transAxes,
+                fontsize=10, ha='center', va='top',
+                bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
 
     plt.xlabel("Nombre de coupes")
     plt.ylabel("Écart relatif (%)")
@@ -176,13 +213,14 @@ if __name__ == "__main__":
     # Use :
 
     plot_evolution_with_point(df_result, folder, 
-                              lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=True, compare=compare)
+                              lowbound=-np.inf, mean=True, median=False, points=True, show=False, save=False, compare=compare)
 
     #print(df_result.to_string(index=False))
 
     #print(find(df_result, 'gisp', 5, 0))
 
-    #print(failed_pb)
+    for item in failed_pb:
+        print(item)
 
 
 

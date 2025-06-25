@@ -7,7 +7,7 @@ if __name__ == "__main__":
     # Note: The construction of the instance reuses the code by Labassi et al. on Graph Neural Networks.
     # Parameters for instance generation
     problems = ["gisp", "wpsm", "fcmcnf"]  # List of problems to generate instances for
-    extend_training_instances = False
+    extend_training_instances = True
 
     for problem in problems:
         if problem=="gisp" or problem=="wpsm":
