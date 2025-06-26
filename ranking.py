@@ -213,15 +213,15 @@ if __name__ == "__main__":
     # Use :
 
     plot_evolution_with_point(df_result, folder, 
-                              lowbound=-np.inf, mean=True, median=False, points=True, show=False, save=False, compare=compare)
+                              lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=False, compare=compare)
 
     #print(df_result.to_string(index=False))
 
     #print(find(df_result, 'gisp', 5, 0))
 
-    for item in failed_pb:
+    """for item in failed_pb:
         print(item)
-
+    """
 
 
 

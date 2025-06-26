@@ -87,6 +87,7 @@ if __name__ == "__main__":
     node_lim=-1
     fitness_size=5
     loop=1
+    parallel = False
     #n_test_instances = 2
     ############ SMALL PARAM FOR TESTING ###########"""
 
@@ -110,7 +111,11 @@ if __name__ == "__main__":
 
     for i in range(loop):
         if num_cuts_per_round == "RL":
-            higher_simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
+            higher_simulation_folder = os.path.join(conf.ROOT_DIR, 
+                                                    "simulation_folder", 
+                                                    "pb__" + problem + "__numcut__" + num_cuts_per_round, 
+                                                    "mode__" + inputs_type, 
+                                                    "seed__" + seed)
             if not os.path.exists(higher_simulation_folder):
                 os.makedirs(higher_simulation_folder)
             simulation_folder = os.path.join(higher_simulation_folder, "loop__" + str(i))
@@ -118,7 +123,10 @@ if __name__ == "__main__":
                 os.makedirs(simulation_folder)
         else:
             higher_simulation_folder=""
-            simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
+            simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", 
+                                             "pb__" + problem, 
+                                             "numcut__" + num_cuts_per_round, 
+                                             "seed__" + seed)
             if not os.path.exists(simulation_folder):
                 os.makedirs(simulation_folder)
         function_folder = os.path.join(simulation_folder, "GP_function")
