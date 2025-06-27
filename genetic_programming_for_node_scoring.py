@@ -42,10 +42,6 @@ def evaluate(scoring_function, params):
     
     return mean_solving_time_or_gap,
 
-def eval_wrapper(individual):
-    # Utiliser la variable globale pour passer les paramètres
-    return evaluate(individual)
-
 def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
             training_folder="Train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 

@@ -30,7 +30,7 @@ def extract_values_from_file(filepath):
         return None
 
 def parse_filename(filename):
-    match = re.match(r'job_([^_]+)_([^_]+)_([0-9]+)(?:_([^_]+))?\.out', filename)
+    match = re.match(r'job_([^_]+)_([^_]+)_([0-9]+)(?:_(.+))?\.out', filename)
     if match:
         problem = match.group(1)
         nb_cuts = match.group(2)
@@ -52,7 +52,7 @@ def parse_filename(filename):
                 else:
                     nb_cuts_int = 100  # Valeur par défaut pour RL si inputs est inconnu
 
-        return problem, nb_cuts_int, seed
+        return problem, nb_cuts_int, seed, inputs
     else:
         return None, None, None
 
@@ -63,7 +63,7 @@ def main(directory):
 
     for filename in os.listdir(directory):
         if filename.endswith('.out'):
-            problem, nb_cuts, seed = parse_filename(filename)
+            problem, nb_cuts, seed, inputs = parse_filename(filename)
             if problem is not None:
                 filepath = os.path.join(directory, filename)
                 score = extract_values_from_file(filepath)
@@ -76,11 +76,11 @@ def main(directory):
                     })
                 else:
                     full=False
-                    failed_pb.append({
-                        "problem": problem,
-                        "nb_cuts": nb_cuts,
-                        "seed": seed,
-                    })
+                    if nb_cuts == 90:
+                        nb_cuts = "heuristic"
+                    elif nb_cuts == 100 or nb_cuts == 110 or nb_cuts == 120 or nb_cuts == 130:
+                        nb_cuts = "RL"
+                    failed_pb.append(f'sbatch runGP.sh "{problem}" "{nb_cuts}" "{seed}" "{inputs}"')
 
     df = pd.DataFrame(data)
     df_sorted = df.sort_values(by=["score"], ascending=False).reset_index(drop=True)
@@ -213,15 +213,15 @@ if __name__ == "__main__":
     # Use :
 
     plot_evolution_with_point(df_result, folder, 
-                              lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=False, compare=compare)
+                              lowbound=-np.inf, mean=True, median=False, points=True, show=False, save=False, compare=compare)
 
     #print(df_result.to_string(index=False))
 
     #print(find(df_result, 'gisp', 5, 0))
 
     """for item in failed_pb:
-        print(item)
-    """
+        print(item)"""
+    
 
 
 

@@ -7,25 +7,25 @@ import matplotlib.pyplot as plt
 
 import torch
 import torch.optim as optim
+import torch.multiprocessing as mp
 
 from RL.neural_network import nnet
 from scip_solver import perform_SCIP_instance
 from RL.arguments import args
 
 import multiprocessing
-import torch.multiprocessing as mp
 from functools import partial
 
 class NeuralNetworkWrapper():
     def __init__(self, training_path="", testing_path="", higher_simulation_folder="", problem="gisp", cut_comp="", 
                  parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None):
         
-        new_args = args
+        self.new_args = args
         self.inputs_type = inputs_type
-        new_args.update({
+        self.new_args.update({
                 'inputs_type': self.inputs_type
             })
-        self.nnet = nnet(new_args)
+        self.nnet = nnet(self.new_args)
         self.training_path = training_path
         self.testing_path = testing_path
         self.higher_simulation_folder = higher_simulation_folder
@@ -43,15 +43,62 @@ class NeuralNetworkWrapper():
         best_test_score = np.inf
         for epoch in range(args["epochs"]):
             print('EPOCH ::: ' + str(epoch + 1), flush=True)
+            print("Training the neural network in parallel...", flush=True)
             self.train()
             test_score = self.test()
-            print("Loss for test instances :", test_score, flush=True)
+            print("Global Loss for test instances :", test_score, flush=True)
             if test_score < best_test_score:
                 best_test_score = test_score
-                print("saving model...", flush=True)
+                print("Saving model...", flush=True)
                 self.save_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
-
+    
     def train(self):
+        self.nnet.share_memory()  # important pour le modèle global
+        optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'])
+
+        instances = [os.path.join(self.training_path[0], f) for f in os.listdir(self.training_path[0])]
+        if len(self.training_path) > 1:
+            instances += [os.path.join(self.training_path[1], f) for f in os.listdir(self.training_path[1])]
+
+        num_processes = min(mp.cpu_count(), len(instances))
+
+        processes = []
+        for rank in range(num_processes):
+            p = mp.Process(target=self.train_worker, args=(rank, instances[rank], self.nnet, optimizer))
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
+
+    def train_worker(self, rank, instance, shared_model, optimizer):
+        torch.manual_seed(rank)  # pour diversité
+
+        local_model = nnet(self.new_args)
+        if self.new_args["cuda"]:
+            local_model.cuda()  
+        local_model.load_state_dict(shared_model.state_dict())
+
+
+        instance_args = (instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, local_model, "train")
+        r, k_list = self.process_instance(instance_args)
+
+        if r is not None and k_list:
+            loss = r * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list])))
+            optimizer.zero_grad()
+            loss.backward()
+
+            for param, shared_param in zip(local_model.parameters(), shared_model.parameters()):
+                if shared_param.grad is None:
+                    shared_param.grad = param.grad.clone()
+                else:
+                    shared_param.grad += param.grad
+
+        # Synchronisation centralisée : update global
+        optimizer.step()
+        shared_model.zero_grad()
+
+
+    """def train(self):
 
         optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'])
 
@@ -65,24 +112,16 @@ class NeuralNetworkWrapper():
             results = []
             for instance in instances[i * args['batch_size'] : (i+1) * args['batch_size']]:
                 instance_args = (instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "train") 
-           
-                """with mp.Pool(processes=min(mp.cpu_count(), len(instances))) as pool:
-                    results = pool.map(self.process_instance, instance_args)
-                """
+
 
                 r, k_list = self.process_instance(instance_args)
                 results.append((r,k_list))
 
-
-            """k_l = results[0][1][0]
-            print("1st", k_l.grad_fn)
-            print("11st", k_l.requires_grad)"""
-
-            losses = [-r * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (r, k_list) in results]
+            losses = [r * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (r, k_list) in results]
 
             loss = torch.stack(losses).mean()
 
-            score = shifted_geo_mean([r for (r, k_list) in results])
+            score = shifted_geo_mean([r for (r, _) in results])
         
             t.set_postfix(score=float(score))
 
@@ -92,9 +131,7 @@ class NeuralNetworkWrapper():
             # compute gradient and do SGD step
             optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
-
-
+            optimizer.step()"""
     
     def test(self):
 
@@ -145,7 +182,7 @@ class NeuralNetworkWrapper():
             )
             return time_or_gap, k_list
         else:
-            return None, k_list
+            return None, None
     
     def save_checkpoint(self, folder='', filename='checkpoint', replace=True):
         filepath = os.path.join(folder, filename)

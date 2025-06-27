@@ -39,6 +39,8 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         map_location = None if args["cuda"] else 'cpu'
         checkpoint = torch.load(filepath, map_location=map_location)
         nnet.load_state_dict(checkpoint['state_dict'])
+        if args["cuda"]:
+            nnet.cuda()
         
     model = Model()
     model.hideOutput()

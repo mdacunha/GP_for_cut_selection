@@ -372,6 +372,22 @@ class CustomCutSelector(Cutsel):
                     'std_obj_values' : get_obj_coeff_stats(self.model)['std']
                     #"10000000":10000000
                 }
+        elif ind==3:
+            context = {
+                    'getEfficacy': self.model.getCutEfficacy(cut),
+                    'getNumIntCols': self.model.getRowNumIntCols(cut),
+                    'getCutLPSolCutoffDistance': cutoffdist,
+                    'getObjParallelism': self.model.getRowObjParallelism(cut),
+                    'getCutViolation': compute_cut_violation(self.model, cut),
+                    'mean_cut_values' : get_cut_coeff_stats(cut)['mean'],
+                    'max_cut_values' : get_cut_coeff_stats(cut)['max'],
+                    'min_cut_values' : get_cut_coeff_stats(cut)['min'],
+                    'std_cut_values' : get_cut_coeff_stats(cut)['std'],
+                    'mean_obj_values' : get_obj_coeff_stats(self.model)['mean'],
+                    'max_obj_values' : get_obj_coeff_stats(self.model)['max'],
+                    'min_obj_values' : get_obj_coeff_stats(self.model)['min'],
+                    'std_obj_values' : get_obj_coeff_stats(self.model)['std']
+                }
 
         return context
     

@@ -86,7 +86,7 @@ if __name__ == "__main__":
     seed="0"
     node_lim=-1
     fitness_size=5
-    loop=1
+    loop=2
     parallel = False
     #n_test_instances = 2
     ############ SMALL PARAM FOR TESTING ###########"""
@@ -196,7 +196,7 @@ if __name__ == "__main__":
             num_cuts_per_round = "RL"
         
     if num_cuts_per_round == "heuristic" or num_cuts_per_round == "RL":
-            num_cuts_per_round = num_cuts_per_round_by_default
+        num_cuts_per_round = num_cuts_per_round_by_default
 
     gp_function = gp_function if args.GP_function_test == "None" else args.GP_function_test
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"

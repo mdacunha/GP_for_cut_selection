@@ -12,11 +12,11 @@ class nnet(nn.Module):
 
         self.args = args
 
-        if args["inputs_type"] == "only_scores":
+        if self.args["inputs_type"] == "only_scores":
             input_dim = 1
-        elif args["inputs_type"] == "only_features":
+        elif self.args["inputs_type"] == "only_features":
             input_dim = 17
-        elif args["inputs_type"] == "scores_and_features":
+        elif self.args["inputs_type"] == "scores_and_features":
             input_dim = 18
             
         embed_dim=self.args['embed_dim']
