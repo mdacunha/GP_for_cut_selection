@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
 
-    #python main.py "gisp" "5" "0" "only_scores" "parallel" None None
+    # python main.py "gisp" "RL" "0" "only_scores" "parallel" None None
     
     # Parameters for GP_function training
     problem = args.problem  # Problem type
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     n_test_instances = len(fichiers)
 
     """#################### TO SET THE FUNCTION TEST ####################
-    # --> NO GP
+    # --> NO GP run
     if problem == "gisp":
         GP_function_test = "add(getCutLPSolCutoffDistance, getCutViolation)"
     elif problem == "wpsm":
@@ -233,13 +233,6 @@ if __name__ == "__main__":
 
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
     #print(gp_function, flush=True)
-
-    json_path = "out.json"
-    if os.path.exists(json_path):
-        os.remove(json_path)
-    if RL and False:
-        with open(json_path, "w") as f:
-            json.dump({}, f)
 
     parallel=False
     if parallel:

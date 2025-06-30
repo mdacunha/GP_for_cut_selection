@@ -141,6 +141,8 @@ class NeuralNetworkWrapper():
             loss.backward()
             optimizer.step()
         
+        """result = [k.item() for k in results[0][1]]
+        print("k_list :", result)"""
         return score
     
     def parallel_test(self, instances):

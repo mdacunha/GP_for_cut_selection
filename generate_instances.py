@@ -24,6 +24,12 @@ if __name__ == "__main__":
             n_commodities_train = int(1.5*ntrain)
             n_commodities_test = int(1.5*ntest)
 
+        if extend_training_instances:
+            training_file_list = [f"data/{problem}/train", f"data/{problem}/more_train"]
+            n_more = 150
+        else:
+            training_file_list = [f"data/{problem}/train"]
+
         n = 50  # Number of training instances
         n_test = 60  # Number of test instances
         whichSet = 'SET2'  # Set identifier, must be set to 'SET2'
@@ -32,6 +38,7 @@ if __name__ == "__main__":
 
         """########### SMALL PARAM FOR TESTING ###########
         n=5
+        n_more = 5
         n_test=5
         min_n_train=60
         max_n_train=70
@@ -39,13 +46,9 @@ if __name__ == "__main__":
         max_n_test = max_n_train
         ########### SMALL PARAM FOR TESTING ###########"""
 
-        if extend_training_instances:
-            training_file_list = [f"data/{problem}/train", f"data/{problem}/more_train"]
-            n = 150
-        else:
-            training_file_list = [f"data/{problem}/train"]
-
-        for training_file in training_file_list:
+        for i, training_file in enumerate(training_file_list):
+            if i==1:
+                n = n_more
             # Directory for training instances
             lp_dir_training = os.path.join(conf.ROOT_DIR, training_file)
             if os.path.exists(lp_dir_training):

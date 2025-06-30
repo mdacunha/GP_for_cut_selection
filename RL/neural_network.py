@@ -82,14 +82,4 @@ class nnet(nn.Module):
                 with torch.no_grad():
                     k = self.forward(features, sample=False)  # k ∈ [0, 1]
                 k = k.cpu().numpy()[0]
-                if mode=="final_test" and False:
-                    json_path = "out.json"
-                    with open(json_path, "r") as f:
-                        data = json.load(f)
-                    last_key = list(data.keys())[-1]
-                    data[last_key] = {
-                            "k": float(k)
-                        }
-                    with open(json_path, "w") as f:
-                        json.dump(data, f, indent=4)
                 return k

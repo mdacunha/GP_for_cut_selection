@@ -73,18 +73,6 @@ class CustomCutSelector(Cutsel):
         # max_forced_score, forced_scores = self.scoring(forcedcuts)
         max_non_forced_score, scores = self.scoring(cuts, self.test)
 
-        if self.final_test and self.RL and False:
-            json_path = "out.json"
-            if not os.path.getsize(json_path) == 0:
-                with open(json_path, "r") as f:
-                    data = json.load(f)
-            else:
-                data = {}
-            new_key = f"{len(data)+1}, {sorted(scores, reverse=True)}"  # exemple : run_001, run_002, etc.
-            data[new_key] = None
-            with open(json_path, "w") as f:
-                json.dump(data, f, indent=4)
-
         if root:
             c = 4
         else:
