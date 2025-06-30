@@ -1,6 +1,7 @@
 from pyscipopt.scip import Cutsel
 from pyscipopt import SCIP_RESULT
 import random
+import time
 import math
 from operator import *
 import re
@@ -42,6 +43,7 @@ class CustomCutSelector(Cutsel):
         self.final_test = final_test
         self.get_scores = get_scores
         self.heuristic = heuristic
+        self.end_time = 0
 
         self.ks = []
         random.seed(42)
@@ -100,6 +102,7 @@ class CustomCutSelector(Cutsel):
             else:
                 inputs = None
 
+            start_time = time.time()
             if self.is_Test and self.final_test:
                 self.k = self.nnet.predict(inputs, mode="final_test")
                 num_cut = round(n_cuts * self.k)
@@ -111,6 +114,7 @@ class CustomCutSelector(Cutsel):
                 self.k = self.nnet.predict(inputs, mode="train")
                 self.ks.append(self.k)
                 num_cut = int(torch.round(n_cuts * self.k))
+            self.end_time += time.time() - start_time
         else:
             num_cut = c * self.num_cuts_per_round
             
@@ -171,6 +175,8 @@ class CustomCutSelector(Cutsel):
     
     def k_list(self):
         return self.ks
+    def time(self):
+        return self.end_time
 
     def scoring(self, cuts, test=False):
 

@@ -33,14 +33,15 @@ if __name__ == "__main__":
         """########### SMALL PARAM FOR TESTING ###########
         n=5
         n_test=5
-        min_n_train=30
-        max_n_train=40
+        min_n_train=60
+        max_n_train=70
         min_n_test = min_n_train
         max_n_test = max_n_train
         ########### SMALL PARAM FOR TESTING ###########"""
 
         if extend_training_instances:
             training_file_list = [f"data/{problem}/train", f"data/{problem}/more_train"]
+            n = 150
         else:
             training_file_list = [f"data/{problem}/train"]
 

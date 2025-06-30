@@ -1,5 +1,4 @@
 import os
-import shutil
 import conf
 import argparse
 from data.build_gisp_instances import *
@@ -34,9 +33,15 @@ if __name__ == "__main__":
     mutate = 0.1  # Mutation rate
     nb_of_gen = 20  # Number of generations
     num_cuts_per_round = args.num_cuts_per_round
-    num_cuts_per_round_by_default = "30"
+    if problem == "gisp":
+        num_cuts_per_round_by_default = "50"
+    elif problem == "wpsm":
+        num_cuts_per_round_by_default = "30"
+    elif problem == "fcmcnf":
+        num_cuts_per_round_by_default = "5"
     seed = args.seed  # Random seed
     inputs_type = args.inputs_type
+    GP_function_test = args.GP_function_test
     sol_path = args.sol_path  # Path to the solution file
 
     node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
@@ -78,7 +83,18 @@ if __name__ == "__main__":
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
     
     n_test_instances = len(fichiers)
+
+    """#################### TO SET THE FUNCTION TEST ####################
+    # --> NO GP
+    if problem == "gisp":
+        GP_function_test = "add(getCutLPSolCutoffDistance, getCutViolation)"
+    elif problem == "wpsm":
+        GP_function_test = "mul(getCutViolation, protectedDiv(10000000, getNumIntCols))"
+    elif problem == "fcmcnf":
+        GP_function_test = "add(getEfficacy, mul(getEfficacy, mul(sub(getNVars, getCutLPSolCutoffDistance), mul(sub(getNVars, getCutLPSolCutoffDistance), getEfficacy))))"
+    #################### TO SET THE FUNCTION TEST ####################"""
     
+
     """########### SMALL PARAM FOR TESTING ###########
     #n_test_instances
     initial_pop=1
@@ -137,40 +153,44 @@ if __name__ == "__main__":
         name = f"{problem}_pop_{initial_pop}_nb_gen{nb_of_gen}_seed_{seed}_loop_{i}"
 
         if num_cuts_per_round == "heuristic" or num_cuts_per_round == "RL":
-            num_cuts_per_round = num_cuts_per_round_by_default          
+            num_cuts_per_round = num_cuts_per_round_by_default
 
-        main_GP(
-            problem=problem,
-            initial_pop=initial_pop,
-            mate=mate,
-            mutate=mutate,
-            nb_of_gen=nb_of_gen,
-            seed=seed,
-            node_select=node_select,
-            saving_folder=function_folder,
-            name=name,
-            training_folder=training_folder,
-            fitness_size=fitness_size,
-            parsimony_size=parsimony_size,
-            time_limit=time_limit,
-            nb_of_instances=nb_of_instances,
-            fixedcutsel=GNN_comparison,
-            node_lim=node_lim,
-            sol_path=sol_path,
-            transformed=transformed,
-            test=SCIP_func_test,
-            num_cuts_per_round=num_cuts_per_round,
-            parallel=parallel,
-            RL=load_checkpoint,
-            inputs_type=inputs_type,
-            higher_simulation_folder=higher_simulation_folder,
-            heuristic=heuristic
-        ) 
+        if GP_function_test == "None":
+            main_GP(
+                problem=problem,
+                initial_pop=initial_pop,
+                mate=mate,
+                mutate=mutate,
+                nb_of_gen=nb_of_gen,
+                seed=seed,
+                node_select=node_select,
+                saving_folder=function_folder,
+                name=name,
+                training_folder=training_folder,
+                fitness_size=fitness_size,
+                parsimony_size=parsimony_size,
+                time_limit=time_limit,
+                nb_of_instances=nb_of_instances,
+                fixedcutsel=GNN_comparison,
+                node_lim=node_lim,
+                sol_path=sol_path,
+                transformed=transformed,
+                test=SCIP_func_test,
+                num_cuts_per_round=num_cuts_per_round,
+                parallel=parallel,
+                RL=load_checkpoint,
+                inputs_type=inputs_type,
+                higher_simulation_folder=higher_simulation_folder,
+                heuristic=heuristic
+            )
 
-        # Evaluate the convergence of GP across generations
-        gp_function = convergence_of_gp_over_generations(simulation_folder,saving=False, show=False)
+            # Evaluate the convergence of GP across generations
+            gp_function = convergence_of_gp_over_generations(simulation_folder, saving=False, show=False)
+        else:
+            gp_function = GP_function_test
 
-        if RL:            
+        if RL:  
+            parallel=False          
             if extend_training_instances:
                 training_path = [os.path.join(conf.ROOT_DIR, f"data/{problem}/{training_folder}/"), 
                                  os.path.join(conf.ROOT_DIR, f"data/{problem}/{more_training_folder}/")]
@@ -188,6 +208,7 @@ if __name__ == "__main__":
                                                 load_checkpoint=load_checkpoint,
                                                 inputs_type=inputs_type,
                                                 sol_path=sol_path,
+                                                parallel=parallel
                                                 )
             nnetwrapper.learn()
 
@@ -198,7 +219,6 @@ if __name__ == "__main__":
     if num_cuts_per_round == "heuristic" or num_cuts_per_round == "RL":
         num_cuts_per_round = num_cuts_per_round_by_default
 
-    gp_function = gp_function if args.GP_function_test == "None" else args.GP_function_test
     gp_func_dic = {"1.2":gp_function}#1.2 is meant for the parsimony parameter "protectedDiv(getRowObjParallelism, getNNonz)"
     #print(gp_function, flush=True)
 
@@ -209,7 +229,7 @@ if __name__ == "__main__":
         with open(json_path, "w") as f:
             json.dump({}, f)
 
-    parallel=True
+    parallel=False
     if parallel:
         parallelised_evaluation_gp(problem, training_folder, testing_folder, higher_simulation_folder, n_test_instances, gp_func_dic, 
                                    time_limit=time_limit, fixedcutsel=GNN_comparison, GNN_transformed=transformed, node_lim=node_lim, 

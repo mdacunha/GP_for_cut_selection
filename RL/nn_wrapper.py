@@ -3,7 +3,6 @@ from tqdm import tqdm
 
 import numpy as np
 from conf import *
-import matplotlib.pyplot as plt
 
 import torch
 import torch.optim as optim
@@ -14,11 +13,11 @@ from scip_solver import perform_SCIP_instance
 from RL.arguments import args
 
 import multiprocessing
-from functools import partial
 
 class NeuralNetworkWrapper():
     def __init__(self, training_path="", testing_path="", higher_simulation_folder="", problem="gisp", cut_comp="", 
-                 parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None):
+                 parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None, 
+                 parallel=False):
         
         self.new_args = args
         self.inputs_type = inputs_type
@@ -37,28 +36,37 @@ class NeuralNetworkWrapper():
         if load_checkpoint:
             self.load_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
         if args["cuda"]:
-            self.nnet.cuda()     
+            self.nnet.cuda()   
+        self.parallel = parallel  
 
     def learn(self):
+        mp.set_start_method('spawn', force=True)
         best_test_score = np.inf
+        instances = [os.path.join(self.training_path[0], f) for f in os.listdir(self.training_path[0])]
+        if len(self.training_path)>1:
+            instances += [os.path.join(self.training_path[1], f) for f in os.listdir(self.training_path[1])]
         for epoch in range(args["epochs"]):
             print('EPOCH ::: ' + str(epoch + 1), flush=True)
-            print("Training the neural network in parallel...", flush=True)
-            self.train()
-            test_score = self.test()
+            if self.parallel:
+                print("Training the neural network in parallel...", flush=True)
+                self.parallel_train(instances)
+                test_score = self.parallel_test(instances)
+            else:
+                print("Training the neural network...", flush=True)
+                self.train(instances)
+                #print("Loss :", train_score, flush=True)
+                test_score = self.test(instances)
             print("Global Loss for test instances :", test_score, flush=True)
             if test_score < best_test_score:
                 best_test_score = test_score
                 print("Saving model...", flush=True)
                 self.save_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
     
-    def train(self):
+    def parallel_train(self, instances):
         self.nnet.share_memory()  # important pour le modèle global
         optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'])
 
-        instances = [os.path.join(self.training_path[0], f) for f in os.listdir(self.training_path[0])]
-        if len(self.training_path) > 1:
-            instances += [os.path.join(self.training_path[1], f) for f in os.listdir(self.training_path[1])]
+        instances = instances[:int(0.8 * len(instances))]  # Utiliser 80% des instances pour l'entraînement
 
         num_processes = min(mp.cpu_count(), len(instances))
 
@@ -69,6 +77,8 @@ class NeuralNetworkWrapper():
             processes.append(p)
         for p in processes:
             p.join()
+        import gc
+        gc.collect()
 
     def train_worker(self, rank, instance, shared_model, optimizer):
         torch.manual_seed(rank)  # pour diversité
@@ -98,13 +108,11 @@ class NeuralNetworkWrapper():
         shared_model.zero_grad()
 
 
-    """def train(self):
+    def train(self, instances):
 
         optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'])
 
-        instances = [os.path.join(self.training_path[0], f) for f in os.listdir(self.training_path[0])]
-        if len(self.training_path)>1:
-            instances += [os.path.join(self.training_path[1], f) for f in os.listdir(self.training_path[1])]
+        instances = instances[:int(0.8 * len(instances))]  # Utiliser 80% des instances pour l'entraînement
 
         batch_count = int(len(instances) / args['batch_size']) + (len(instances) % args['batch_size'] != 0)
         t = tqdm(range(batch_count), desc="Training Net")
@@ -131,15 +139,14 @@ class NeuralNetworkWrapper():
             # compute gradient and do SGD step
             optimizer.zero_grad()
             loss.backward()
-            optimizer.step()"""
+            optimizer.step()
+        
+        return score
     
-    def test(self):
+    def parallel_test(self, instances):
 
         examples = []
-        size_train_set = len(os.listdir(self.training_path[0])) 
-        if len(self.training_path)>1:
-            size_train_set += len(os.listdir(self.training_path[1]))
-        instances = [os.path.join(self.testing_path, f) for f in os.listdir(self.testing_path)][:int(0.2 * size_train_set)]
+        instances = instances[int(0.8 * len(instances)):]  # Utiliser 80% des instances pour l'entraînement
 
         instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "test") for instance in instances]
         
@@ -155,12 +162,32 @@ class NeuralNetworkWrapper():
         score = shifted_geo_mean(examples)
 
         return score
+    
+    def test(self, instances):
+
+        examples = []
+        instances = instances[int(0.8 * len(instances)):]  # Utiliser 80% des instances pour l'entraînement
+
+        instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "test") for instance in instances]
+        results = []
+        for instance_arg in instance_args:
+            r, k_list = self.process_instance(instance_arg)
+            results.append((r, k_list))
+        
+        examples = [r for (r, _) in results if r is not None]
+        if not examples:
+            print("Aucun exemple valide trouvé.")
+            return
+
+        score = shifted_geo_mean(examples)
+
+        return score
 
     def process_instance(self, instance_args):
         instance_path, cut_comp, parameter_settings, sol_path, inputs_type, nnet, mode = instance_args
         if instance_path.endswith(".lp") or instance_path.endswith(".mps"):
             if mode=="train":
-                _, time_or_gap, k_list = perform_SCIP_instance(
+                _, time_or_gap, k_list, t = perform_SCIP_instance(
                     instance_path, 
                     cut_comp,
                     parameter_settings=parameter_settings,
@@ -170,7 +197,7 @@ class NeuralNetworkWrapper():
                     nnet=nnet
                 )
             elif mode=="test":
-                _, time_or_gap, k_list = perform_SCIP_instance(
+                _, time_or_gap, k_list, t = perform_SCIP_instance(
                 instance_path,
                 cut_comp,
                 parameter_settings=parameter_settings,
