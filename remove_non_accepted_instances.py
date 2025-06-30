@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 
 def lister_fichiers(dossier, transformed_folder):
     """Retourne la liste des noms de fichiers dans un dossier donné."""

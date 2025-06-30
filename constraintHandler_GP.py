@@ -1,4 +1,4 @@
-from pyscipopt import Model, Conshdlr, SCIP_RESULT, SCIP_PRESOLTIMING, SCIP_PROPTIMING
+from pyscipopt import Conshdlr, SCIP_RESULT
 """
 This is a dummy constraint handler that is used to force the number of separation rounds that we want.
 It checks if the number of separation rounds has been hit, and if it hasn't then it sends the solver back to solve

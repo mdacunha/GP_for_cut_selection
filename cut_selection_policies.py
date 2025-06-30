@@ -2,7 +2,6 @@ from pyscipopt.scip import Cutsel
 from pyscipopt import SCIP_RESULT
 import random
 import time
-import math
 from operator import *
 import re
 import numpy as np
@@ -10,7 +9,6 @@ import os
 import json
 from filelock import FileLock
 from num_cut_heuristic import num_cut_heuristic
-from RL.arguments import args
 import torch
 
 def protectedDiv(left, right):

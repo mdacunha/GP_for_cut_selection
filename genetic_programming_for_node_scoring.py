@@ -1,6 +1,5 @@
 import math
 import random
-import statistics
 from deap import creator, base, gp, algorithms, tools, creator
 
 import numpy

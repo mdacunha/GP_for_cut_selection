@@ -1,13 +1,9 @@
-from pathlib import Path
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "GNN_method"))
 
-import pyscipopt
 from pyscipopt import Model, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_PARAMSETTING
-import statistics
 from operator import *
-import argparse
 import numpy as np
 import time
 
@@ -16,7 +12,7 @@ from conf import *
 from cut_selection_policies import CustomCutSelector
 from constraintHandler_GP import RepeatSepaConshdlr
 
-from GNN_method.Slurm.train_neural_network import get_standard_solve_data
+#from GNN_method.Slurm.train_neural_network import get_standard_solve_data
 
 from RL.arguments import args
 import torch
