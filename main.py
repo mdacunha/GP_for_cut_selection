@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
 
-    #python main.py "gisp" "5" "0" "only_scores" "True" None None
+    #python main.py "gisp" "5" "0" "only_scores" "parallel" None None
     
     # Parameters for GP_function training
     problem = args.problem  # Problem type
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     if os.path.exists(f"scip_stats_{num_cuts_per_round}.txt"):
         os.remove(f"scip_stats_{num_cuts_per_round}.txt")"""
 
-    p = args.parallel
+    p = (args.parallel=="parallel")
 
     for i in range(loop):
         if num_cuts_per_round == "RL":
