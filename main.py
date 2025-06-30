@@ -17,11 +17,12 @@ if __name__ == "__main__":
 
     # side quests : 
     parser.add_argument('inputs_type', type=str, help="inputs_type for NN") # one of ["only_scores", "only_features", "scores_and_features"]
+    parser.add_argument('parallel', type=str, help="parallel")
     parser.add_argument('GP_function_test', type=str, help="Testing folder")
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
 
-    #python main.py "gisp" "5" "0" "only_scores" None None
+    #python main.py "gisp" "5" "0" "only_scores" "True" None None
     
     # Parameters for GP_function training
     problem = args.problem  # Problem type
@@ -123,15 +124,26 @@ if __name__ == "__main__":
     if os.path.exists(f"scip_stats_{num_cuts_per_round}.txt"):
         os.remove(f"scip_stats_{num_cuts_per_round}.txt")"""
 
-    
+    p = args.parallel
 
     for i in range(loop):
         if num_cuts_per_round == "RL":
-            higher_simulation_folder = os.path.join(conf.ROOT_DIR, 
-                                                    "simulation_folder", 
-                                                    "pb__" + problem + "__numcut__" + num_cuts_per_round, 
-                                                    "mode__" + inputs_type, 
-                                                    "seed__" + seed)
+            if p:
+                higher_simulation_folder = os.path.join(conf.ROOT_DIR, 
+                                                        "simulation_folder", 
+                                                        "pb__" + problem,
+                                                        "numcut__" + num_cuts_per_round, 
+                                                        "parallel",
+                                                        "mode__" + inputs_type, 
+                                                        "seed__" + seed)
+            else:
+                higher_simulation_folder = os.path.join(conf.ROOT_DIR, 
+                                                        "simulation_folder", 
+                                                        "pb__" + problem,
+                                                        "numcut__" + num_cuts_per_round, 
+                                                        "not_parallel",
+                                                        "mode__" + inputs_type, 
+                                                        "seed__" + seed)
             if not os.path.exists(higher_simulation_folder):
                 os.makedirs(higher_simulation_folder)
             simulation_folder = os.path.join(higher_simulation_folder, "loop__" + str(i))
@@ -190,7 +202,7 @@ if __name__ == "__main__":
             gp_function = GP_function_test
 
         if RL:  
-            parallel=False          
+            parallel=p          
             if extend_training_instances:
                 training_path = [os.path.join(conf.ROOT_DIR, f"data/{problem}/{training_folder}/"), 
                                  os.path.join(conf.ROOT_DIR, f"data/{problem}/{more_training_folder}/")]
