@@ -10,6 +10,8 @@ import sys
 import os
 import time
 from functools import partial
+import psutil
+import gc
 
 from conf import *
 from scip_solver import perform_SCIP_instance, perform_SCIP_instances_using_a_tuned_comp_policy
@@ -40,6 +42,11 @@ def evaluate(scoring_function, params):
     mean_solving_time_or_gap = float(mean_solving_time_or_gap)
     
     return mean_solving_time_or_gap,
+
+def kill_child_processes():
+    parent = psutil.Process(os.getpid())
+    for child in parent.children(recursive=True):
+        child.kill()
 
 def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             nb_of_gen=20, seed=None, node_select="BFS", saving_folder="simulation_outcomes/", name="",
@@ -156,8 +163,8 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         with open(os.path.join(saving_folder, f"{name}.json"), "w+") as outfile:
             json.dump([logbook, [str(elt) for elt in hof]], outfile)
     
-    import gc
     gc.collect()
+    kill_child_processes()
 
 if __name__ == "__main__":
     t_1 = time.time()

@@ -168,6 +168,7 @@ if __name__ == "__main__":
             num_cuts_per_round = num_cuts_per_round_by_default
 
         if GP_function_test == "None":
+            parallel = True
             main_GP(
                 problem=problem,
                 initial_pop=initial_pop,
