@@ -4,7 +4,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "GNN_method"))
 
 from pyscipopt import Model, SCIP_PRESOLTIMING, SCIP_PROPTIMING, SCIP_PARAMSETTING
 from operator import *
-import numpy as np
 import time
 
 from GNN_method.utilities import get_filename

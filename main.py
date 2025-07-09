@@ -18,7 +18,6 @@ if __name__ == "__main__":
     # side quests : 
     parser.add_argument('inputs_type', type=str, help="inputs_type for NN") # one of ["only_scores", "only_features", "scores_and_features"]
     parser.add_argument('parallel', type=str, help="parallel")
-    parser.add_argument('GP_function_test', type=str, help="Testing folder")
     parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
 
@@ -42,10 +41,7 @@ if __name__ == "__main__":
         num_cuts_per_round_by_default = "5"
     seed = args.seed  # Random seed
     inputs_type = args.inputs_type
-    GP_function_test = args.GP_function_test
     sol_path = args.sol_path  # Path to the solution file
-
-    node_select = "BFS"  # Node selection method (BFS allows testing DFS as well)
 
     # Tournament parameters
     fitness_size = 5  # Number of individuals in the fitness tournament
@@ -73,18 +69,19 @@ if __name__ == "__main__":
 
     RL = False # DO NOT USE, set num_cuts_per_round == "RL" instead
     load_checkpoint = False  # Whether to load a checkpoint for first RL training
+    best_model_score = None
     loop = 1
     extend_training_instances = True
     if num_cuts_per_round == "RL":
         RL = True
-        loop = 3
+        loop = 1
 
     dossier = os.path.join(conf.ROOT_DIR, "data", problem, testing_folder)
     contenu = os.listdir(dossier)
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
     
     n_test_instances = len(fichiers)
-
+    GP_function_test = ""
     """#################### TO SET THE FUNCTION TEST ####################
     # --> NO GP run
     if problem == "gisp":
@@ -103,7 +100,7 @@ if __name__ == "__main__":
     seed="0"
     node_lim=-1
     fitness_size=5
-    loop=2
+    loop=1
     parallel = False
     #n_test_instances = 2
     ############ SMALL PARAM FOR TESTING ###########"""
@@ -167,8 +164,8 @@ if __name__ == "__main__":
         if num_cuts_per_round == "heuristic" or num_cuts_per_round == "RL":
             num_cuts_per_round = num_cuts_per_round_by_default
 
-        if GP_function_test == "None":
-            parallel = True
+        if GP_function_test == "":
+            #parallel = True
             main_GP(
                 problem=problem,
                 initial_pop=initial_pop,
@@ -176,7 +173,6 @@ if __name__ == "__main__":
                 mutate=mutate,
                 nb_of_gen=nb_of_gen,
                 seed=seed,
-                node_select=node_select,
                 saving_folder=function_folder,
                 name=name,
                 training_folder=training_folder,
@@ -221,14 +217,16 @@ if __name__ == "__main__":
                                                 load_checkpoint=load_checkpoint,
                                                 inputs_type=inputs_type,
                                                 sol_path=sol_path,
-                                                parallel=parallel
+                                                parallel=parallel,
+                                                best_score=best_model_score
                                                 )
-            nnetwrapper.learn()
+            best_model_score = nnetwrapper.learn()
 
 
             load_checkpoint = True
-            num_cuts_per_round = "RL"
-        
+            initial_pop = 40
+        num_cuts_per_round = "RL"
+
     if num_cuts_per_round == "heuristic" or num_cuts_per_round == "RL":
         num_cuts_per_round = num_cuts_per_round_by_default
 

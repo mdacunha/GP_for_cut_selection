@@ -42,7 +42,9 @@ class nnet(nn.Module):
         #N = features.size(0)  # nombre de coupes candidates
 
         # Étape 1 : Embed les vecteurs 17D → d
-        x = self.embedding(features)  # [N, embed_dim]
+        assert not torch.isnan(features).any(), "features contains NaN"
+        x = self.embedding(features) # [N, embed_dim]
+        assert not torch.isnan(x).any(), "embedding output contains NaN" 
         x = self.ReLU(x)
         x = x.unsqueeze(0)  # [1, N, embed_dim] → batch_size=1 pour LSTM
 
@@ -65,6 +67,12 @@ class nnet(nn.Module):
         # Étape 5 : tanh-Gaussian + transformation en [0, 1]
         k_tanh = torch.tanh(k_raw)
         k = 0.5 * (k_tanh + 1.0)
+        
+        if torch.isnan(mu): print("mu is NaN", flush=True)
+        if torch.isnan(log_sigma): print("log_sigma is NaN", flush=True)
+        if torch.isnan(sigma): print("sigma is NaN", flush=True)
+        if torch.isnan(k_raw): print("k_raw is NaN", flush=True)
+
 
         return k #, mu, sigma
     

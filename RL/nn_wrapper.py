@@ -17,14 +17,9 @@ import multiprocessing
 class NeuralNetworkWrapper():
     def __init__(self, training_path="", testing_path="", higher_simulation_folder="", problem="gisp", cut_comp="", 
                  parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None, 
-                 parallel=False):
+                 parallel=False, glob_model=None, best_score=None):
         
-        self.new_args = args
-        self.inputs_type = inputs_type
-        self.new_args.update({
-                'inputs_type': self.inputs_type
-            })
-        self.nnet = nnet(self.new_args)
+        self.set_nnet(args, inputs_type, glob_model)
         self.training_path = training_path
         self.testing_path = testing_path
         self.higher_simulation_folder = higher_simulation_folder
@@ -33,18 +28,37 @@ class NeuralNetworkWrapper():
         self.parameter_settings = parameter_settings
         self.saving_folder = saving_folder
         self.sol_path = sol_path
-        if load_checkpoint:
+        self.load_checkpoint = load_checkpoint
+        if self.load_checkpoint:
             self.load_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
         if args["cuda"]:
             self.nnet.cuda()   
         self.parallel = parallel  
 
+
+    def set_nnet(self, args, inputs_type, model):
+        if model is not None:
+            self.nnet = model
+        else:
+            self.new_args = args
+            self.inputs_type = inputs_type
+            self.new_args.update({
+                    'inputs_type': self.inputs_type
+                })
+            self.nnet = nnet(self.new_args)
+
     def learn(self):
-        mp.set_start_method('spawn', force=True)
-        best_test_score = np.inf
+        #mp.set_start_method('spawn', force=True)
+        if self.load_checkpoint and (self.best_score is not None):
+            best_test_score = self.best_score
+        else:
+            best_test_score = np.inf
         instances = [os.path.join(self.training_path[0], f) for f in os.listdir(self.training_path[0])]
         if len(self.training_path)>1:
             instances += [os.path.join(self.training_path[1], f) for f in os.listdir(self.training_path[1])]
+
+        n = len(instances)
+        self.baselines = {i: 0.0 for i in range(1, n + 1)}
         for epoch in range(args["epochs"]):
             print('EPOCH ::: ' + str(epoch + 1), flush=True)
             if self.parallel:
@@ -53,7 +67,7 @@ class NeuralNetworkWrapper():
                 test_score = self.parallel_test(instances)
             else:
                 print("Training the neural network...", flush=True)
-                self.train(instances)
+                self.train(instances, n)
                 #print("Loss :", train_score, flush=True)
                 test_score = self.test(instances)
             print("Global Loss for test instances :", test_score, flush=True)
@@ -61,6 +75,7 @@ class NeuralNetworkWrapper():
                 best_test_score = test_score
                 print("Saving model...", flush=True)
                 self.save_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
+        return best_test_score
     
     def parallel_train(self, instances):
         self.nnet.share_memory()  # important pour le modèle global
@@ -108,31 +123,40 @@ class NeuralNetworkWrapper():
         shared_model.zero_grad()
 
 
-    def train(self, instances):
+    def train(self, instances, n):
 
         optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'])
 
-        instances = instances[:int(0.8 * len(instances))]  # Utiliser 80% des instances pour l'entraînement
+        instances = instances[:int(0.8 * n)]  # Utiliser 80% des instances pour l'entraînement
 
         batch_count = int(len(instances) / args['batch_size']) + (len(instances) % args['batch_size'] != 0)
-        t = tqdm(range(batch_count), desc="Training Net")
+        t = range(batch_count)
         for i in t:
             results = []
-            for instance in instances[i * args['batch_size'] : (i+1) * args['batch_size']]:
+            for instance in instances[i * args['batch_size'] : min((i+1) * args['batch_size'], len(instances))]:
                 instance_args = (instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "train") 
 
 
                 r, k_list = self.process_instance(instance_args)
                 results.append((r,k_list))
 
-            losses = [r * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (r, k_list) in results]
+            alpha = 0.1
+            for j in range(i * args['batch_size'], min((i+1) * args['batch_size'], len(instances))):
+                b = self.baselines[j+1]
+                #print(len(results), j-i * args['batch_size'])
+                r = results[j-i * args['batch_size']][0]
+                new_b = (1 - alpha) * b + alpha * r
+                self.baselines[j+1] = new_b
+                temp = list(results[j - i * args['batch_size']])
+                temp[0] = r - new_b
+                results[j - i * args['batch_size']] = tuple(temp)
+
+            losses = [a * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (a, k_list) in results]
 
             loss = torch.stack(losses).mean()
 
             score = shifted_geo_mean([r for (r, _) in results])
         
-            t.set_postfix(score=float(score))
-
             if args["cuda"]:
                 loss = loss.contiguous().cuda()
 
@@ -229,3 +253,5 @@ class NeuralNetworkWrapper():
         map_location = None if args["cuda"] else 'cpu'
         checkpoint = torch.load(filepath, map_location=map_location, weights_only=True)
         self.nnet.load_state_dict(checkpoint['state_dict'])
+
+    

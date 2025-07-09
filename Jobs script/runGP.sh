@@ -10,8 +10,8 @@
 #SBATCH --error=/dev/null
 
 # Vérification des arguments
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
-  echo "Arguments non fournis. Utilisation : sbatch run_gp_scoop.sh <arg1> <arg2> <arg3> <arg4>"
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ]; then
+  echo "Arguments non fournis. Utilisation : sbatch run_gp_scoop.sh <arg1> <arg2> <arg3> <arg4> <arg5>"
   exit 1
 fi
 
@@ -19,12 +19,13 @@ ARGUMENT1=$1
 ARGUMENT2=$2
 ARGUMENT3=$3
 ARGUMENT4=$4
+ARGUMENT5=$5
 
 # Préparation des logs
 LOGDIR=logs_ind_1_heuristic
 mkdir -p "$LOGDIR"
-if [ "$ARGUMENT3" == "RL" ]; then
-  LOGFILE="${LOGDIR}/job_${ARGUMENT1}_${ARGUMENT2}_${ARGUMENT3}_${ARGUMENT4}.out"
+if [ "$ARGUMENT2" == "RL" ]; then
+  LOGFILE="${LOGDIR}/job_${ARGUMENT1}_${ARGUMENT2}_${ARGUMENT3}_${ARGUMENT4}_${ARGUMENT5}.out"
 else
   LOGFILE="${LOGDIR}/job_${ARGUMENT1}_${ARGUMENT2}_${ARGUMENT3}.out"
 fi
@@ -42,13 +43,13 @@ export SLURM_NTASKS=127
 
 ## Créer le wrapper Python
 SCOOP_WRAPPER=$(pwd)/scoop-python.sh
-#cat << 'EOF' > "$SCOOP_WRAPPER"
-##!/bin/bash -l
-#eval "$(micromamba shell hook --shell=bash)"
-#micromamba activate GP_for_cut_selection
-#python "$@"
-#EOF
-#chmod +x "$SCOOP_WRAPPER"
+cat << 'EOF' > "$SCOOP_WRAPPER"
+#!/bin/bash -l
+eval "$(micromamba shell hook --shell=bash)"
+micromamba activate GP_for_cut_selection
+python "$@"
+EOF
+chmod +x "$SCOOP_WRAPPER"
 
 HOSTFILE=$(pwd)/hostfile
 yes localhost | head -n "$SLURM_NTASKS" > "$HOSTFILE"
@@ -64,7 +65,7 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 INPUTFILE=$(pwd)/main.py
 
 # Lancer le script avec SCOOP
-python -m scoop --hostfile "$HOSTFILE" -n "$SLURM_NTASKS" --python-interpreter="$SCOOP_WRAPPER" "$INPUTFILE" "$ARGUMENT1" "$ARGUMENT2" "$ARGUMENT3" "$ARGUMENT4" None None
+python -m scoop --hostfile "$HOSTFILE" -n "$SLURM_NTASKS" --python-interpreter="$SCOOP_WRAPPER" "$INPUTFILE" "$ARGUMENT1" "$ARGUMENT2" "$ARGUMENT3" "$ARGUMENT4" "$ARGUMENT5" None None
 
 echo "Fin du job à $(date)"
 

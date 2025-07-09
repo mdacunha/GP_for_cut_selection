@@ -88,19 +88,21 @@ class CustomCutSelector(Cutsel):
             else:
                 inputs = None
 
-            start_time = time.time()
+            #start_time = time.time()
             if self.is_Test and self.final_test:
                 self.k = self.nnet.predict(inputs, mode="final_test")
                 num_cut = round(n_cuts * self.k)
-                #print("IIIIIIIICCCCCCCCCCCCCCIIIIIIII", self.k, num_cut)
             elif self.is_Test and not self.final_test:
                 self.k = self.nnet.predict(inputs, mode="test")
                 num_cut = round(n_cuts * self.k)
             else:
                 self.k = self.nnet.predict(inputs, mode="train")
                 self.ks.append(self.k)
-                num_cut = int(torch.round(n_cuts * self.k))
-            self.end_time += time.time() - start_time
+                try:
+                    num_cut = int(torch.round(n_cuts * self.k))
+                except:
+                    print("n_cuts", n_cuts, "k", self.k, flush=True)
+            #self.end_time += time.time() - start_time
         else:
             num_cut = c * self.num_cuts_per_round
             

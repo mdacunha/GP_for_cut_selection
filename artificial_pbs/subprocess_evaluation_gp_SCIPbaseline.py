@@ -42,7 +42,15 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
         args.update({
                 'inputs_type': inputs_type
             })
-        filepath = os.path.join(higher_simulation_folder, "weights.pth.tar")
+        if higher_simulation_folder == "":
+            folder = os.path.join(conf.ROOT_DIR, 
+                            "simulation_folder", 
+                            "pb__" + problem,
+                            "numcut__RL"
+                            )
+            filepath = os.path.join(folder, f"global_{problem}_model.pth.tar")
+        else:
+            filepath = os.path.join(higher_simulation_folder, "weights.pth.tar")
         if not os.path.exists(filepath):
             raise ("No model in path {}".format(filepath))
         map_location = None if args["cuda"] else 'cpu'

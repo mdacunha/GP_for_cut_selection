@@ -10,10 +10,10 @@ import conf
 import data.build_instances
 
 
-def parallelised_evaluation_gp(problem, training_folder, testing_folder, higher_simulation_folder, nb_of_test_instances, 
-                               gp_func_dic, time_limit=None, 
+def parallelised_evaluation_gp(problem, training_folder="train", testing_folder="test", higher_simulation_folder="", nb_of_test_instances=60, 
+                               gp_func_dic="", time_limit=0, 
                             fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, 
-                            do_gnn=True, build_set_of_instances=True,saving_folder="simulation_outcomes",
+                            do_gnn=False, build_set_of_instances=False,saving_folder="simulation_outcomes",
                             num_cuts_per_round=10, RL=False, inputs_type="", heuristic=False, get_scores=False):
     
     threads = cpu_count()#128 # number of threads per node
@@ -142,9 +142,10 @@ def run_instance(instance_and_params):
             one_result[(method, instance)] = perfs[list(perfs.keys())[0]]
     return one_result
 
-def evaluation_gp(problem, training_folder, testing_folder, higher_simulation_folder, nb_of_test_instances, gp_func_dic, time_limit=None, 
+def evaluation_gp(problem, training_folder="train", testing_folder="test", higher_simulation_folder="", nb_of_test_instances=60, 
+                               gp_func_dic="", time_limit=0, 
                         fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, 
-                        do_gnn=True, build_set_of_instances=True,saving_folder="simulation_outcomes",
+                        do_gnn=False, build_set_of_instances=False,saving_folder="simulation_outcomes",
                         num_cuts_per_round=10, RL=False, inputs_type="", heuristic=False, get_scores=False):
     nb_of_built_instances = 100
     json_gp_func_dic = json.dumps(gp_func_dic)

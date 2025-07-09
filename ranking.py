@@ -8,7 +8,7 @@ from matplotlib.ticker import PercentFormatter
 import numpy as np
 
 def extract_values_from_file(filepath):
-    with open(filepath, 'r') as f:
+    with open(filepath, 'r', errors='ignore') as f:
         lines = f.readlines()[-10:]
 
     gp_time = None
@@ -43,11 +43,11 @@ def parse_filename(filename):
             if nb_cuts == "heuristic":
                 nb_cuts_int = 90
             elif nb_cuts == "RL":
-                if inputs == "only_scores":
+                if inputs == "only_scores_not_parallel" or inputs == "only_scores_parallel":
                     nb_cuts_int = 110
-                elif inputs == "only_features":
+                elif inputs == "only_features_not_parallel" or inputs == "only_features_parallel":
                     nb_cuts_int = 120
-                elif inputs == "scores_and_features":
+                elif inputs == "scores_and_features_not_parallel" or inputs == "scores_and_features_parallel":
                     nb_cuts_int = 130
                 else:
                     nb_cuts_int = 100  # Valeur par défaut pour RL si inputs est inconnu
@@ -219,11 +219,11 @@ if __name__ == "__main__":
 
     #print(find(df_result, 'gisp', 5, 0))
 
-    for item in failed_pb:
-        print(item)
+    """for item in failed_pb:
+        print(item)"""
     
 
 
 
 
-# python ranking.py ../logs_ind_0_heuristic ../logs_ind_1_heuristic
+# python ranking.py ../logs_ind_1_heuristic

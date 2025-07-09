@@ -164,7 +164,7 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             json.dump([logbook, [str(elt) for elt in hof]], outfile)
     
     gc.collect()
-    kill_child_processes()
+    #kill_child_processes()
 
 if __name__ == "__main__":
     t_1 = time.time()
