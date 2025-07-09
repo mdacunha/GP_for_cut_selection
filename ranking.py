@@ -140,7 +140,7 @@ def plot_evolution_with_point(dfs, folder, lowbound=-np.inf, mean=True, median=F
     if 90 in all_cut_values:
         explanations.append("90 = heuristic")
     if 110 in all_cut_values:
-        explanations.append("110 = RL + only_scores")
+        explanations.append("110 = RL") # + only_scores")
     if 120 in all_cut_values:
         explanations.append("120 = RL + only_features")
     if 130 in all_cut_values:
