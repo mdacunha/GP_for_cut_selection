@@ -140,22 +140,21 @@ class NeuralNetworkWrapper():
                 r, k_list = self.process_instance(instance_args)
                 results.append((r,k_list))
 
-            alpha = 0.1
             for j in range(i * args['batch_size'], min((i+1) * args['batch_size'], len(instances))):
                 b = self.baselines[j+1]
                 #print(len(results), j-i * args['batch_size'])
                 r = results[j-i * args['batch_size']][0]
-                new_b = (1 - alpha) * b + alpha * r
+                new_b = (1 - args['alpha']) * b + args['alpha'] * r
                 self.baselines[j+1] = new_b
                 temp = list(results[j - i * args['batch_size']])
-                temp[0] = r + new_b
+                temp[0] = r - new_b
                 results[j - i * args['batch_size']] = tuple(temp)
 
             losses = [a * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (a, k_list) in results]
 
             loss = torch.stack(losses).mean()
 
-            score = shifted_geo_mean([r for (r, _) in results])
+            #score = shifted_geo_mean([r for (r, _) in results])
         
             if args["cuda"]:
                 loss = loss.contiguous().cuda()
@@ -167,7 +166,6 @@ class NeuralNetworkWrapper():
         
         """result = [k.item() for k in results[0][1]]
         print("k_list :", result)"""
-        return score
     
     def parallel_test(self, instances):
 
