@@ -144,11 +144,11 @@ class NeuralNetworkWrapper():
                 b = self.baselines[j+1]
                 #print(len(results), j-i * args['batch_size'])
                 r = results[j-i * args['batch_size']][0]
+                temp = list(results[j - i * args['batch_size']])
+                temp[0] = r - b
+                results[j - i * args['batch_size']] = tuple(temp)
                 new_b = (1 - args['alpha']) * b + args['alpha'] * r
                 self.baselines[j+1] = new_b
-                temp = list(results[j - i * args['batch_size']])
-                temp[0] = r - new_b
-                results[j - i * args['batch_size']] = tuple(temp)
 
             losses = [a * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (a, k_list) in results]
 
