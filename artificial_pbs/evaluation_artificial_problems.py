@@ -146,7 +146,7 @@ def evaluation_gp(problem, training_folder="train", testing_folder="test", highe
                                gp_func_dic="", time_limit=0, 
                         fixedcutsel=False, GNN_transformed=False, node_lim=-1, sol_path=None, 
                         do_gnn=False, build_set_of_instances=False,saving_folder="simulation_outcomes",
-                        num_cuts_per_round=10, RL=False, inputs_type="", heuristic=False, get_scores=False):
+                        num_cuts_per_round=10, RL=False, inputs_type="", heuristic=False, get_scores=False, exp=0):
     nb_of_built_instances = 100
     json_gp_func_dic = json.dumps(gp_func_dic)
     is_ok = False
@@ -201,7 +201,8 @@ def evaluation_gp(problem, training_folder="train", testing_folder="test", highe
                                                     json_gp_func_dic, str(time_limit), 
                                                    str(int(fixedcutsel)), str(int(GNN_transformed)), str(node_lim), 
                                                    sol_path, instance, saving_folder, str(num_cuts_per_round),
-                                                   str(int(RL)), inputs_type, str(int(heuristic)), str(int(get_scores))],
+                                                   str(int(RL)), inputs_type, str(int(heuristic)), str(int(get_scores)),
+                                                   str(exp)],
                 capture_output=True, text=True)
             print("result for", testing_folder, "GP_function and SCIP : ", result.stdout, flush=True)
 

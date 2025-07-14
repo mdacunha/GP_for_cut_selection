@@ -8,17 +8,18 @@ import torch
 import torch.optim as optim
 import torch.multiprocessing as mp
 
-from RL.neural_network import nnet
 from scip_solver import perform_SCIP_instance
 from RL.arguments import args
 
 import multiprocessing
+from RL.neural_network import nnet0, nnet1, nnet2
 
 class NeuralNetworkWrapper():
     def __init__(self, training_path="", testing_path="", higher_simulation_folder="", problem="gisp", cut_comp="", 
                  parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None, 
-                 parallel=False, glob_model=None, best_score=None):
+                 parallel=False, glob_model=None, best_score=None, exp=0):
         
+        self.exp = int(exp)
         self.set_nnet(args, inputs_type, glob_model)
         self.training_path = training_path
         self.testing_path = testing_path
@@ -34,6 +35,7 @@ class NeuralNetworkWrapper():
         if args["cuda"]:
             self.nnet.cuda()   
         self.parallel = parallel  
+        #self.best_score = best_score
 
 
     def set_nnet(self, args, inputs_type, model):
@@ -45,7 +47,12 @@ class NeuralNetworkWrapper():
             self.new_args.update({
                     'inputs_type': self.inputs_type
                 })
-            self.nnet = nnet(self.new_args)
+            if self.exp==0:
+                self.nnet = nnet0(self.new_args)
+            elif self.exp==1:
+                self.nnet = nnet1(self.new_args)
+            elif self.exp==2:
+                self.nnet = nnet2(self.new_args)
 
     def learn(self):
         #mp.set_start_method('spawn', force=True)
@@ -218,7 +225,8 @@ class NeuralNetworkWrapper():
                     sol_path=sol_path,
                     RL=True,
                     inputs_type=inputs_type,
-                    nnet=nnet
+                    nnet=nnet,
+                    exp=self.exp
                 )
             elif mode=="test":
                 _, time_or_gap, k_list, t = perform_SCIP_instance(
@@ -229,7 +237,8 @@ class NeuralNetworkWrapper():
                 is_Test=True,
                 RL=True,
                 inputs_type=inputs_type,
-                nnet=nnet
+                nnet=nnet,
+                exp=self.exp
             )
             return time_or_gap, k_list
         else:

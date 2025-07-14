@@ -5,9 +5,63 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-class nnet(nn.Module):
-    def __init__(self, args, k_max=500):
-        super(nnet, self).__init__()
+class nnet2(nn.Module):
+    def __init__(self, args, outputs=100):
+        super(nnet2, self).__init__()
+
+        self.args = args
+        self.outputs = outputs
+
+        if self.args["inputs_type"] == "only_scores":
+            input_dim = 1
+        elif self.args["inputs_type"] == "only_features":
+            input_dim = 17
+        elif self.args["inputs_type"] == "scores_and_features":
+            input_dim = 18
+            
+        lstm_hidden_dim=self.args['lstm_hidden_dim']
+
+        self.ReLU = nn.ReLU()
+
+        self.lstm = nn.LSTM(input_dim, lstm_hidden_dim, batch_first=True)
+        self.fc = nn.Linear(lstm_hidden_dim, outputs)
+
+    def forward(self, x):
+        """
+        x: (B, L, 2)
+        lengths: (B,)
+        """
+        L, _ = x.shape
+        #assert L <= self.k_max, f"Input length {L} exceeds k_max {self.k_max}"
+        
+        _, (h_n, _) = self.lstm(x)
+        h_final = h_n[-1]
+        logits = self.fc(h_final)
+
+        # Crée la distribution catégorielle directement sur les logits
+        dist = Categorical(logits=logits)
+        return dist
+    
+    def predict(self, features, mode="test"):
+            features = np.concatenate(features, axis=0)
+            features = torch.FloatTensor(features.astype(np.float64))
+            #print("features shape", features.shape)
+            if self.args["cuda"]: features = features.contiguous().cuda()
+            #features = features.view(features.size(0), self.args["num_inputs"])
+            if mode=="train":
+                self.train()
+                dist = self.forward(features)  # k ∈ [0, 1]
+                return dist
+            elif mode=="test" or mode=="final_test":
+                self.eval()
+                with torch.no_grad():
+                    dist = self.forward(features)  # k ∈ [0, 1]
+                    k = dist.sample().cpu().item() + 1  # échantillonne une action
+                return k
+            
+class nnet1(nn.Module):
+    def __init__(self, args, k_max=800):
+        super(nnet1, self).__init__()
 
         self.args = args
         self.k_max = k_max
@@ -51,6 +105,7 @@ class nnet(nn.Module):
             #print("features shape", features.shape)
             if self.args["cuda"]: features = features.contiguous().cuda()
             #features = features.view(features.size(0), self.args["num_inputs"])
+            self.mode=mode
             if mode=="train":
                 self.train()
                 dist = self.forward(features)  # k ∈ [0, 1]
@@ -62,9 +117,9 @@ class nnet(nn.Module):
                     k = dist.sample().cpu().item() + 1  # échantillonne une action
                 return k
 
-class prev_nnet(nn.Module):
+class nnet0(nn.Module):
     def __init__(self, args):
-        super(prev_nnet, self).__init__()
+        super(nnet0, self).__init__()
 
         self.args = args
 

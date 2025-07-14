@@ -24,6 +24,7 @@ if __name__ == "__main__":
     parser.add_argument('inputs_type', type=str, help='inputs_type')
     parser.add_argument('higher_simulation_folder', type=str, help='higher_simulation_folder')
     parser.add_argument('heuristic', type=int, help='0 ou 1, heuristic mode')
+    parser.add_argument('exp', type=int, help='experiment number for heuristic mode')
     args = parser.parse_args()
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
@@ -39,7 +40,7 @@ if __name__ == "__main__":
             cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
             node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path, test=test, 
             num_cuts_per_round=args.num_cuts_per_round, RL=RL, inputs_type=args.inputs_type, 
-            higher_simulation_folder=args.higher_simulation_folder, heuristic=heuristic)
+            higher_simulation_folder=args.higher_simulation_folder, heuristic=heuristic, exp=args.exp)
         print(mean_val)
     else:
         random.seed(args.seed)

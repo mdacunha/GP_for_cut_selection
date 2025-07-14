@@ -13,7 +13,7 @@ from conf import *
 from RL.arguments import args as argss
 import torch
 
-from RL.neural_network import nnet
+from RL.neural_network import nnet0, nnet1, nnet2
 
 
 def evaluate_a_function_and_store_it(problem, function, performance_folder, saving_folder,
@@ -21,7 +21,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
                                      parameter_settings=False, time_limit=0, 
                                      fixedcutsel=False, node_lim=-1, sol_path=None, func_name=None,
                                      instances=[], num_cuts_per_round=10, RL=False, inputs_type="",
-                                     heuristic=False, get_scores=False):
+                                     heuristic=False, get_scores=False, exp=0):
     
     if function == "best_estimate_BFS":
         comp_policy = "estimate"
@@ -55,7 +55,13 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
             raise ("No model in path {}".format(filepath))
         map_location = None if args["cuda"] else 'cpu'
         checkpoint = torch.load(filepath, map_location=map_location, weights_only=True)
-        nn = nnet(args)
+        exp = int(exp)
+        if exp==0:
+            nn = nnet0(args)
+        elif exp==1:
+            nn = nnet1(args)
+        elif exp==2:
+            nn = nnet2(args)
         nn.load_state_dict(checkpoint['state_dict'])
     else:
         nn = None
@@ -72,8 +78,8 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
                                                    parameter_settings=parameter_settings, time_limit=time_limit, 
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    is_Test=True, final_test=True, num_cuts_per_round=num_cuts_per_round, 
-                                                   RL=RL, nnet=nn, inputs_type=inputs_type,
-                                                   heuristic=heuristic, get_scores=get_scores)
+                                                   RL=RL, nnet=nn, inputs_type=inputs_type, heuristic=heuristic, 
+                                                   get_scores=get_scores, exp=exp)
 
             perfs[instance[:len(instance) - 3]] = [nb_nodes, time]
 
@@ -103,7 +109,7 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="trai
                                                    node_lim=-1, sol_path=None, instances=[], 
                                                    saving_folder="simulation_outcomes",
                                                    num_cuts_per_round=10, RL=False, inputs_type="",
-                                                   heuristic=False, get_scores=False):
+                                                   heuristic=False, get_scores=False, exp=0):
     if GNN_transformed:
         folder = f"GNN_method/TransformedInstances/{testing_folder}"
     else:
@@ -116,7 +122,7 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="trai
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    func_name="GP_parsimony_parameter_"+str(key), instances=instances,
                                                    num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type,
-                                                   heuristic=heuristic, get_scores=get_scores)
+                                                   heuristic=heuristic, get_scores=get_scores, exp=exp)
 
 
     functions = ["SCIP"]#"best_estimate_BFS","best_estimate_DFS","best_LB_BFS"]
@@ -145,6 +151,7 @@ if __name__ == "__main__":
     parser.add_argument('inputs_type', type=str, help='inputs_type')
     parser.add_argument('heuristic', type=int, help='heuristic')
     parser.add_argument('get_scores', type=int, help='get_scores')
+    parser.add_argument('exp', type=int, help='exp')
     args = parser.parse_args()
     problem = args.problem
     training_folder=args.training_folder
@@ -165,5 +172,5 @@ if __name__ == "__main__":
                                                   GNN_transformed=GNN_transformed, node_lim=args.node_lim, 
                                                   sol_path=args.sol_path, instances=[instance], saving_folder=args.saving_folder, 
                                                   num_cuts_per_round=args.num_cuts_per_round, RL=RL, inputs_type=args.inputs_type,
-                                                  heuristic=heuristic, get_scores=args.get_scores)
+                                                  heuristic=heuristic, get_scores=args.get_scores, exp=args.exp)
     print("It is ok for GP_function and the SCIP baseline")

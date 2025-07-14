@@ -15,18 +15,24 @@ from constraintHandler_GP import RepeatSepaConshdlr
 
 from RL.arguments import args
 import torch
-from RL.neural_network import nnet as nnet_for_GP
+from RL.neural_network import nnet0, nnet1, nnet2
 
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, final_test=False,
                           test=False, num_cuts_per_round=10, RL=False, higher_simulation_folder="", 
-                          nnet=None, inputs_type="", heuristic=False, get_scores=False):
+                          nnet=None, inputs_type="", heuristic=False, get_scores=False, exp=0):
     new_args = args
-    if RL and nnet==None:
+    if RL and nnet==None: # for the GP learning step starting at loop=2
         new_args.update({
                 'inputs_type': inputs_type
             })
-        nnet = nnet_for_GP(new_args)
+        exp = int(exp)
+        if exp==0:
+            nnet = nnet0(new_args)
+        elif exp==1:
+            nnet = nnet1(new_args)
+        elif exp==2:
+            nnet = nnet2(new_args)
         filepath = os.path.join(higher_simulation_folder, "weights" + ".pth.tar")
         if not os.path.exists(filepath):
             raise ("No model in path {}".format(filepath))
@@ -72,7 +78,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             #cut_selector = CustomCutSelector(comp_policy=cut_comp)
             cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL, 
                                              nnet=nnet, inputs_type=inputs_type, is_Test=is_Test, final_test=final_test,
-                                             get_scores=get_scores, heuristic=heuristic, args=new_args)
+                                             get_scores=get_scores, heuristic=heuristic, args=new_args, exp=exp)
             model.includeCutsel(cut_selector, "", "", 536870911)
             
 
@@ -132,7 +138,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                      RL=False,
                                                      inputs_type="",
                                                      higher_simulation_folder="",
-                                                     heuristic=False):  
+                                                     heuristic=False,
+                                                     exp=0):  
     sol_times = []
     nnodes = []
     nb_done = 0
@@ -150,7 +157,7 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                                    num_cuts_per_round=num_cuts_per_round, RL=RL,
                                                                    inputs_type=inputs_type,
                                                                    higher_simulation_folder=higher_simulation_folder,
-                                                                   heuristic=heuristic)
+                                                                   heuristic=heuristic, exp=exp)
                 sol_times.append(time_or_gap)
                 nnodes.append(visited_nodes)
                 nb_done += 1

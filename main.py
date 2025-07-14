@@ -18,6 +18,7 @@ if __name__ == "__main__":
     # side quests : 
     parser.add_argument('inputs_type', type=str, help="inputs_type for NN") # one of ["only_scores", "only_features", "scores_and_features"]
     parser.add_argument('parallel', type=str, help="parallel")
+    parser.add_argument('exp', type=str, help="exp") # not used
     #parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
 
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     contenu = os.listdir(dossier)
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
     
-    n_test_instances = len(fichiers)
+    n_test_instances = 30 #len(fichiers)
     GP_function_test = ""
     #################### TO SET THE FUNCTION TEST ####################
     # --> NO GP run
@@ -190,7 +191,8 @@ if __name__ == "__main__":
                 RL=load_checkpoint,
                 inputs_type=inputs_type,
                 higher_simulation_folder=higher_simulation_folder,
-                heuristic=heuristic
+                heuristic=heuristic,
+                exp=args.exp
             )
 
             # Evaluate the convergence of GP across generations
@@ -218,7 +220,8 @@ if __name__ == "__main__":
                                                 inputs_type=inputs_type,
                                                 sol_path=sol_path,
                                                 parallel=parallel,
-                                                best_score=best_model_score
+                                                best_score=best_model_score,
+                                                exp=args.exp
                                                 )
             best_model_score = nnetwrapper.learn()
 
@@ -245,7 +248,7 @@ if __name__ == "__main__":
                         fixedcutsel=GNN_comparison, GNN_transformed=transformed, node_lim=node_lim, 
                         sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder,
                         num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type, heuristic=heuristic, 
-                        get_scores=get_scores)
+                        get_scores=get_scores, exp=args.exp)
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=[problem], partitions=[testing_folder], saving_folder=simulation_folder)

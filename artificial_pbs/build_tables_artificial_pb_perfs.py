@@ -41,12 +41,6 @@ def gather_info_from_json_files(problems=["fcmcnf","wpms","gisp"],partitions=["t
 
 def just_get_the_output_results(dic_info, several_dicts=False):
 
-    if several_dicts:
-        for one_dic in dic_info:
-            print_results(one_dic)
-    else:
-        print_results(dic_info)
-
     def print_results(dic_info):
         problems = list(dic_info.keys())
         partitions = list(dic_info[problems[0]].keys())
@@ -57,6 +51,12 @@ def just_get_the_output_results(dic_info, several_dicts=False):
                 for function in functions:
                     string_to_print+= f"results for function {proper_names[function]} are {dic_info[problem][partition][function][0]} +-{dic_info[problem][partition][function][1]}\n"
                 print(string_to_print)
+    
+    if several_dicts:
+        for one_dic in dic_info:
+            print_results(one_dic)
+    else:
+        print_results(dic_info)
 
 def build_table_with_cell_colors(dic_info):
     min_elt = {}

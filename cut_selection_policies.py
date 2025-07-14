@@ -27,7 +27,7 @@ operations = {
 class CustomCutSelector(Cutsel):
 
     def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, nnet=None, inputs_type="",is_Test=False,
-                 final_test=False, get_scores=False, heuristic=False, args={}, min_orthogonality_root=0.9, min_orthogonality=0.9):
+                 final_test=False, get_scores=False, heuristic=False, args={}, exp=0, min_orthogonality_root=0.9, min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
         self.num_cuts_per_round = num_cuts_per_round
@@ -43,6 +43,7 @@ class CustomCutSelector(Cutsel):
         self.heuristic = heuristic
         self.end_time = 0
         self.args=args
+        self.exp = exp
 
         self.log_sample_list = []
         random.seed(42)
@@ -91,19 +92,37 @@ class CustomCutSelector(Cutsel):
                     inputs = None
 
                 #start_time = time.time()
-                if self.is_Test and self.final_test:
-                    num_cut = self.nnet.predict(inputs, mode="final_test")
-                    num_cut = int(num_cut)
-                elif self.is_Test and not self.final_test:
-                    num_cut = self.nnet.predict(inputs, mode="test")
-                    num_cut = int(num_cut)
+                if self.exp==0:
+                    if self.is_Test and self.final_test:
+                        self.k = self.nnet.predict(inputs, mode="final_test")
+                        num_cut = round(n_cuts * self.k)
+                    elif self.is_Test and not self.final_test:
+                        self.k = self.nnet.predict(inputs, mode="test")
+                        num_cut = round(n_cuts * self.k)
+                    else:
+                        self.k = self.nnet.predict(inputs, mode="train")
+                        self.ks.append(self.k)
+                        try:
+                            num_cut = int(torch.round(n_cuts * self.k))
+                        except:
+                            print("n_cuts", n_cuts, "k", self.k, flush=True)
                 else:
-                    self.dist = self.nnet.predict(inputs, mode="train")
-                    sample = self.dist.sample()
-                    log_sample = self.dist.log_prob(sample)
-                    self.log_sample_list.append(log_sample)
-                    num_cut = sample.cpu().item() + 1
-                    num_cut = int(num_cut)
+                    if self.is_Test and self.final_test:
+                        num_cut = self.nnet.predict(inputs, mode="final_test")
+                        num_cut = int(num_cut)
+                    elif self.is_Test and not self.final_test:
+                        num_cut = self.nnet.predict(inputs, mode="test")
+                        num_cut = int(num_cut)
+                    else:
+                        self.dist = self.nnet.predict(inputs, mode="train")
+                        sample = self.dist.sample()
+                        log_sample = self.dist.log_prob(sample)
+                        self.log_sample_list.append(log_sample)
+                        num_cut = sample.cpu().item() + 1
+                        if self.exp==1:
+                            num_cut = int(num_cut)
+                        elif self.exp==2:
+                            num_cut = int(num_cut/100 * n_cuts)
                 #self.end_time += time.time() - start_time
             else:
                 num_cut = c * self.num_cuts_per_round
@@ -229,10 +248,10 @@ class CustomCutSelector(Cutsel):
                         log_sample = self.dist.log_prob(sample)
                         self.log_sample_list.append(log_sample)
                         num_cut = sample.cpu().item() + 1
-                        try:
-                            num_cut = int(torch.round(n_cuts * num_cut))
-                        except:
-                            print("n_cuts", n_cuts, "k", num_cut, flush=True)
+                        if self.exp==1:
+                            num_cut = int(num_cut)
+                        elif self.exp==2:
+                            num_cut = int(num_cut/100 * n_cuts)
                     #self.end_time += time.time() - start_time
                 else:
                     num_cut = c * self.num_cuts_per_round
