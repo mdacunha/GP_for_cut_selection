@@ -65,7 +65,7 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 INPUTFILE=$(pwd)/main.py
 
 # Lancer le script avec SCOOP
-python -m scoop --hostfile "$HOSTFILE" -n "$SLURM_NTASKS" --python-interpreter="$SCOOP_WRAPPER" "$INPUTFILE" "$ARGUMENT1" "$ARGUMENT2" "$ARGUMENT3" "$ARGUMENT4" "$ARGUMENT5" None None
+python -m scoop --hostfile "$HOSTFILE" -n "$SLURM_NTASKS" --python-interpreter="$SCOOP_WRAPPER" "$INPUTFILE" "$ARGUMENT1" "$ARGUMENT2" "$ARGUMENT3" "$ARGUMENT4" "$ARGUMENT5"
 
 echo "Fin du job à $(date)"
 

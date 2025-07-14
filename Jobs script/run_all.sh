@@ -12,9 +12,9 @@ chmod +x "$SCOOP_WRAPPER"
 
 # Listes d'arguments
 ARG1_LIST=("gisp" "wpsm" "fcmcnf") 
-ARG2_LIST=("RL") #"2" "5" "10" "20" "30" "40" "50" "70" "heuristic") # "RL")
+ARG2_LIST=("RL") #("2" "5" "10" "20" "30" "40" "50" "70" "heuristic" "RL")
 ARG3_LIST=("0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14")
-ARG4_LIST=("only_scores" "only_features" "scores_and_features")
+ARG4_LIST=("only_scores") #("only_features" "scores_and_features")
 ARG5_LIST=("not_parallel") # "parallel")
 
 # Soumettre un job par combinaison

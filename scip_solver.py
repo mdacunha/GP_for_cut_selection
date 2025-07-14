@@ -21,9 +21,8 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, final_test=False,
                           test=False, num_cuts_per_round=10, RL=False, higher_simulation_folder="", 
                           nnet=None, inputs_type="", heuristic=False, get_scores=False):
-    
+    new_args = args
     if RL and nnet==None:
-        new_args = args
         new_args.update({
                 'inputs_type': inputs_type
             })
@@ -73,7 +72,7 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             #cut_selector = CustomCutSelector(comp_policy=cut_comp)
             cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL, 
                                              nnet=nnet, inputs_type=inputs_type, is_Test=is_Test, final_test=final_test,
-                                             get_scores=get_scores, heuristic=heuristic)
+                                             get_scores=get_scores, heuristic=heuristic, args=new_args)
             model.includeCutsel(cut_selector, "", "", 536870911)
             
 
@@ -109,14 +108,14 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             bd = model.getGap()
             score = (sd["gap"] - bd) / (abs(sd["gap"]) + 1e-8)
             return model.getNNodes(), score
-        return model.getNNodes(), model.getGap(), cut_selector.k_list(), None
+        return model.getNNodes(), model.getGap(), cut_selector.get_log_sample_list(), None
     if cut_comp == "SCIP":
         return model.getNNodes(), model.getSolvingTime(), None, None
     try:
         t = cut_selector.time()/model.getSolvingTime()*100
     except ZeroDivisionError:
         t = 0
-    return model.getNNodes(), model.getSolvingTime(), cut_selector.k_list(), t
+    return model.getNNodes(), model.getSolvingTime(), cut_selector.get_log_sample_list(), t
 
 
 def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_comp="estimate", node_select="BFS",

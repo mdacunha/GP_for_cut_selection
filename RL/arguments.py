@@ -7,5 +7,6 @@ args = {
     'alpha': 0.3,
     'cuda': torch.cuda.is_available(),
     'embed_dim': 64,
-    'lstm_hidden_dim': 128
+    'lstm_hidden_dim': 128,
+    'cuts_parellism': 0
 }

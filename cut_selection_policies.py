@@ -27,7 +27,7 @@ operations = {
 class CustomCutSelector(Cutsel):
 
     def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, nnet=None, inputs_type="",is_Test=False,
-                 final_test=False, get_scores=False, heuristic=False, min_orthogonality_root=0.9, min_orthogonality=0.9):
+                 final_test=False, get_scores=False, heuristic=False, args={}, min_orthogonality_root=0.9, min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
         self.num_cuts_per_round = num_cuts_per_round
@@ -42,8 +42,9 @@ class CustomCutSelector(Cutsel):
         self.get_scores = get_scores
         self.heuristic = heuristic
         self.end_time = 0
+        self.args=args
 
-        self.ks = []
+        self.log_sample_list = []
         random.seed(42)
     
     def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
@@ -65,104 +66,204 @@ class CustomCutSelector(Cutsel):
         @return: Dictionary containing the keys 'cuts', 'nselectedcuts', result'. Warning: Cuts can only be reordered!
         @rtype: dict
         """
-        # Initialise number of selected cuts and number of cuts that are still valid candidates
-        n_cuts = len(cuts)
-        nselectedcuts = 0
+        if self.args['cuts_parellism']==0:
+            # Initialise number of selected cuts and number of cuts that are still valid candidates
+            n_cuts = len(cuts)
+            nselectedcuts = 0
 
-        # Generate the scores of each cut and thereby the maximum score
-        # max_forced_score, forced_scores = self.scoring(forcedcuts)
-        max_non_forced_score, scores = self.scoring(cuts, self.test)
+            # Generate the scores of each cut and thereby the maximum score
+            # max_forced_score, forced_scores = self.scoring(forcedcuts)
+            max_non_forced_score, scores = self.scoring(cuts, self.test)
 
-        if root:
-            c = 4
-        else:
-            c = 1
-
-        if self.RL:
-            if self.inputs_type == "only_scores":
-                inputs = [np.array([[score]]) for score in scores]
-            elif self.inputs_type == "only_features":
-                inputs = self.getfeatures(cuts)
-            elif self.inputs_type == "scores_and_features":
-                inputs = self.get_scores_and_features(cuts, scores)
+            if root:
+                c = 4
             else:
-                inputs = None
+                c = 1
 
-            #start_time = time.time()
-            if self.is_Test and self.final_test:
-                self.k = self.nnet.predict(inputs, mode="final_test")
-                num_cut = round(n_cuts * self.k)
-            elif self.is_Test and not self.final_test:
-                self.k = self.nnet.predict(inputs, mode="test")
-                num_cut = round(n_cuts * self.k)
+            if self.RL:
+                if self.inputs_type == "only_scores":
+                    inputs = [np.array([[score]]) for score in scores]
+                elif self.inputs_type == "only_features":
+                    inputs = self.getfeatures(cuts)
+                elif self.inputs_type == "scores_and_features":
+                    inputs = self.get_scores_and_features(cuts, scores)
+                else:
+                    inputs = None
+
+                #start_time = time.time()
+                if self.is_Test and self.final_test:
+                    num_cut = self.nnet.predict(inputs, mode="final_test")
+                    num_cut = int(num_cut)
+                elif self.is_Test and not self.final_test:
+                    num_cut = self.nnet.predict(inputs, mode="test")
+                    num_cut = int(num_cut)
+                else:
+                    self.dist = self.nnet.predict(inputs, mode="train")
+                    sample = self.dist.sample()
+                    log_sample = self.dist.log_prob(sample)
+                    self.log_sample_list.append(log_sample)
+                    num_cut = sample.cpu().item() + 1
+                    num_cut = int(num_cut)
+                #self.end_time += time.time() - start_time
             else:
-                self.k = self.nnet.predict(inputs, mode="train")
-                self.ks.append(self.k)
-                try:
-                    num_cut = int(torch.round(n_cuts * self.k))
-                except:
-                    print("n_cuts", n_cuts, "k", self.k, flush=True)
-            #self.end_time += time.time() - start_time
-        else:
-            num_cut = c * self.num_cuts_per_round
-            
-        # Get the number of cuts that we will select this round.
-        num_cuts_to_select = min(maxnselectedcuts, max(num_cut - len(forcedcuts), 0), n_cuts)
-        #print(num_cuts_to_select)
+                num_cut = c * self.num_cuts_per_round
+                
+            # Get the number of cuts that we will select this round.
+            num_cuts_to_select = min(maxnselectedcuts, max(num_cut - len(forcedcuts), 0), n_cuts)
+            #print(num_cuts_to_select)
 
-        # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
-        # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
-        if root:
-            max_parallel = 1 - self.min_orthogonality_root
-            good_max_parallel = max(0.5, max_parallel)
-        else:
-            max_parallel = 1 - self.min_orthogonality
-            good_max_parallel = max(0.5, max_parallel)      
+            # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
+            # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
+            if root:
+                max_parallel = 1 - self.min_orthogonality_root
+                good_max_parallel = max(0.5, max_parallel)
+            else:
+                max_parallel = 1 - self.min_orthogonality
+                good_max_parallel = max(0.5, max_parallel)      
 
-        if self.get_scores:
-            print("scores.json", num_cuts_to_select, scores)
-            self.ajouter_donnee_json("scores.json", num_cuts_to_select, scores)
+            if self.get_scores:
+                print("scores.json", num_cuts_to_select, scores)
+                self.ajouter_donnee_json("scores.json", num_cuts_to_select, scores)
 
-        if self.heuristic:
-            num = num_cut_heuristic(scores)
-            #num_cuts_to_select = min(num, num_cuts_to_select)
-            num_cuts_to_select = num
+            if self.heuristic:
+                num = num_cut_heuristic(scores)
+                #num_cuts_to_select = min(num, num_cuts_to_select)
+                num_cuts_to_select = num
 
-        good_score = max_non_forced_score
+            good_score = max_non_forced_score
 
-        # This filters out all cuts in cuts who are parallel to a forcedcut.
-        for forced_cut in forcedcuts:
-            n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, forced_cut, cuts,
-                                                                scores, max_parallel, good_max_parallel, good_score)
+            # This filters out all cuts in cuts who are parallel to a forcedcut.
+            for forced_cut in forcedcuts:
+                n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, forced_cut, cuts,
+                                                                    scores, max_parallel, good_max_parallel, good_score)
 
-        if maxnselectedcuts > 0 and num_cuts_to_select > 0:
-            while n_cuts > 0:
-                # Break the loop if we have selected the required amount of cuts
-                if nselectedcuts == num_cuts_to_select:
-                    break
-                # Re-sorts cuts and scores by putting the best cut at the beginning
-                cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
-                nselectedcuts += 1
-                n_cuts -= 1
-                n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, cuts[nselectedcuts - 1],
-                                                                    cuts,
-                                                                    scores, max_parallel, good_max_parallel,
-                                                                    good_score)
+            if maxnselectedcuts > 0 and num_cuts_to_select > 0:
+                while n_cuts > 0:
+                    # Break the loop if we have selected the required amount of cuts
+                    if nselectedcuts == num_cuts_to_select:
+                        break
+                    # Re-sorts cuts and scores by putting the best cut at the beginning
+                    cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
+                    nselectedcuts += 1
+                    n_cuts -= 1
+                    n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, cuts[nselectedcuts - 1],
+                                                                        cuts,
+                                                                        scores, max_parallel, good_max_parallel,
+                                                                        good_score)
 
-            # So far we have done the algorithm from the default method. We will now enforce choosing the highest
-            # scored cuts from those that were previously removed for being too parallel.
-            # Reset the n_cuts counter
-            n_cuts = len(cuts) - nselectedcuts
-            for remaining_cut_i in range(nselectedcuts, num_cuts_to_select):
-                cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
-                nselectedcuts += 1
-                n_cuts -= 1
+                # So far we have done the algorithm from the default method. We will now enforce choosing the highest
+                # scored cuts from those that were previously removed for being too parallel.
+                # Reset the n_cuts counter
+                n_cuts = len(cuts) - nselectedcuts
+                for remaining_cut_i in range(nselectedcuts, num_cuts_to_select):
+                    cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
+                    nselectedcuts += 1
+                    n_cuts -= 1
+
+        elif self.args['cuts_parellism']==1:
+            # Initialise number of selected cuts and number of cuts that are still valid candidates
+            n_cuts = len(cuts)
+            nselectedcuts = 0
+
+            # Generate the scores of each cut and thereby the maximum score
+            # max_forced_score, forced_scores = self.scoring(forcedcuts)
+            max_non_forced_score, scores = self.scoring(cuts, self.test)
+
+            good_score = max_non_forced_score
+
+            # This filters out all cuts in cuts who are parallel to a forcedcut.
+            for forced_cut in forcedcuts:
+                n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, forced_cut, cuts,
+                                                                    scores, max_parallel, good_max_parallel, good_score)
+
+            if maxnselectedcuts > 0 and num_cuts_to_select > 0:
+                while n_cuts > 0:
+                    # Break the loop if we have selected the required amount of cuts
+                    """if nselectedcuts == num_cuts_to_select:
+                        break"""
+                    if nselectedcuts >= maxnselectedcuts:
+                        break
+                    # Re-sorts cuts and scores by putting the best cut at the beginning
+                    cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
+                    nselectedcuts += 1
+                    n_cuts -= 1
+                    n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, cuts[nselectedcuts - 1],
+                                                                        cuts,
+                                                                        scores, max_parallel, good_max_parallel,
+                                                                        good_score)
+                    
+                # So far we have done the algorithm from the default method. We will now enforce choosing the highest
+                # scored cuts from those that were previously removed for being too parallel.
+                # Reset the n_cuts counter
+                n_cuts = len(cuts) - nselectedcuts
+                for remaining_cut_i in range(nselectedcuts, len(cuts)):
+                    cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
+                    nselectedcuts += 1
+                    n_cuts -= 1
+
+                if root:
+                    c = 4
+                else:
+                    c = 1
+
+                if self.RL:
+                    if self.inputs_type == "only_scores":
+                        inputs = [np.array([[score]]) for score in scores]
+                    elif self.inputs_type == "only_features":
+                        inputs = self.getfeatures(cuts)
+                    elif self.inputs_type == "scores_and_features":
+                        inputs = self.get_scores_and_features(cuts, scores)
+                    else:
+                        inputs = None
+
+                    #start_time = time.time()
+                    if self.is_Test and self.final_test:
+                        num_cut = self.nnet.predict(inputs, mode="final_test")
+                        num_cut = round(n_cuts * num_cut)
+                    elif self.is_Test and not self.final_test:
+                        num_cut = self.nnet.predict(inputs, mode="test")
+                        num_cut = round(n_cuts * num_cut)
+                    else:
+                        self.dist = self.nnet.predict(inputs, mode="train")
+                        sample = self.dist.sample()
+                        log_sample = self.dist.log_prob(sample)
+                        self.log_sample_list.append(log_sample)
+                        num_cut = sample.cpu().item() + 1
+                        try:
+                            num_cut = int(torch.round(n_cuts * num_cut))
+                        except:
+                            print("n_cuts", n_cuts, "k", num_cut, flush=True)
+                    #self.end_time += time.time() - start_time
+                else:
+                    num_cut = c * self.num_cuts_per_round
+                    
+                # Get the number of cuts that we will select this round.
+                num_cuts_to_select = min(maxnselectedcuts, max(num_cut - len(forcedcuts), 0), n_cuts)
+                #print(num_cuts_to_select)
+
+                # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
+                # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
+                if root:
+                    max_parallel = 1 - self.min_orthogonality_root
+                    good_max_parallel = max(0.5, max_parallel)
+                else:
+                    max_parallel = 1 - self.min_orthogonality
+                    good_max_parallel = max(0.5, max_parallel)      
+
+                if self.get_scores:
+                    print("scores.json", num_cuts_to_select, scores)
+                    self.ajouter_donnee_json("scores.json", num_cuts_to_select, scores)
+
+                if self.heuristic:
+                    num = num_cut_heuristic(scores)
+                    #num_cuts_to_select = min(num, num_cuts_to_select)
+                    num_cuts_to_select = num
 
         return {'cuts': cuts, 'nselectedcuts': nselectedcuts,
                 'result': SCIP_RESULT.SUCCESS}
     
-    def k_list(self):
-        return self.ks
+    def get_log_sample_list(self):
+        return self.log_sample_list
     def time(self):
         return self.end_time
 

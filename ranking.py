@@ -213,7 +213,7 @@ if __name__ == "__main__":
     # Use :
 
     plot_evolution_with_point(df_result, folder, 
-                              lowbound=-0.2, mean=True, median=False, points=True, show=True, save=False, compare=compare)
+                              lowbound=-np.inf, mean=True, median=False, points=True, show=True, save=True, compare=compare)
 
     #print(df_result.to_string(index=False))
 

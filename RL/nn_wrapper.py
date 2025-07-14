@@ -137,10 +137,10 @@ class NeuralNetworkWrapper():
                 instance_args = (instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "train") 
 
 
-                r, k_list = self.process_instance(instance_args)
-                results.append((r,k_list))
+                reward, log_sample_list = self.process_instance(instance_args)
+                results.append((reward, log_sample_list))
 
-            for j in range(i * args['batch_size'], min((i+1) * args['batch_size'], len(instances))):
+            """for j in range(i * args['batch_size'], min((i+1) * args['batch_size'], len(instances))):
                 b = self.baselines[j+1]
                 #print(len(results), j-i * args['batch_size'])
                 r = results[j-i * args['batch_size']][0]
@@ -148,10 +148,10 @@ class NeuralNetworkWrapper():
                 temp[0] = r - b
                 results[j - i * args['batch_size']] = tuple(temp)
                 new_b = (1 - args['alpha']) * b + args['alpha'] * r
-                self.baselines[j+1] = new_b
+                self.baselines[j+1] = new_b"""
 
-            losses = [a * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (a, k_list) in results]
-
+            losses = [-reward * torch.stack(log_sample_list).sum() for (reward, log_sample_list) in results]
+            
             loss = torch.stack(losses).mean()
 
             #score = shifted_geo_mean([r for (r, _) in results])

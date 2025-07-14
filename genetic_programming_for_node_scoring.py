@@ -150,11 +150,12 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
     pop, logbook = algorithms.eaSimple(pop, toolbox, mate, mutate, nb_of_gen, stats,
                                         halloffame=hof)
 
-    print(pop, logbook, stats, hof)
-    for elt in hof:
+    #print(pop, logbook, stats, hof)
+    print(logbook)
+    """for elt in hof:
         print(str(elt))
     for elt in logbook:
-        print(elt)
+        print(elt)"""
     if saving_folder is not None:
         try:
             os.makedirs(saving_folder)

@@ -1,16 +1,16 @@
-import os
 import numpy as np
-import json
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions import Categorical
 
 class nnet(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, k_max=500):
         super(nnet, self).__init__()
 
         self.args = args
+        self.k_max = k_max
 
         if self.args["inputs_type"] == "only_scores":
             input_dim = 1
@@ -19,10 +19,66 @@ class nnet(nn.Module):
         elif self.args["inputs_type"] == "scores_and_features":
             input_dim = 18
             
+        lstm_hidden_dim=self.args['lstm_hidden_dim']
+
+        self.ReLU = nn.ReLU()
+
+        self.lstm = nn.LSTM(input_dim, lstm_hidden_dim, batch_first=True)
+        self.fc = nn.Linear(lstm_hidden_dim, k_max)
+
+    def forward(self, x):
+        """
+        x: (B, L, 2)
+        lengths: (B,)
+        """
+        L, _ = x.shape
+        assert L <= self.k_max, f"Input length {L} exceeds k_max {self.k_max}"
+        
+        _, (h_n, _) = self.lstm(x)
+        h_final = h_n[-1]
+        logits = self.fc(h_final)
+
+        mask = torch.arange(self.k_max, device=x.device) < L
+        logits[~mask] = -1e10  # force probs to ~0
+
+        # Crée la distribution catégorielle directement sur les logits
+        dist = Categorical(logits=logits)
+        return dist
+    
+    def predict(self, features, mode="test"):
+            features = np.concatenate(features, axis=0)
+            features = torch.FloatTensor(features.astype(np.float64))
+            #print("features shape", features.shape)
+            if self.args["cuda"]: features = features.contiguous().cuda()
+            #features = features.view(features.size(0), self.args["num_inputs"])
+            if mode=="train":
+                self.train()
+                dist = self.forward(features)  # k ∈ [0, 1]
+                return dist
+            elif mode=="test" or mode=="final_test":
+                self.eval()
+                with torch.no_grad():
+                    dist = self.forward(features)  # k ∈ [0, 1]
+                    k = dist.sample().cpu().item() + 1  # échantillonne une action
+                return k
+
+class prev_nnet(nn.Module):
+    def __init__(self, args):
+        super(prev_nnet, self).__init__()
+
+        self.args = args
+
+        if self.args["inputs_type"] == "only_scores":
+            input_dim = 2
+        elif self.args["inputs_type"] == "only_features":
+            input_dim = 17
+        elif self.args["inputs_type"] == "scores_and_features":
+            input_dim = 18
+            
         embed_dim=self.args['embed_dim']
         lstm_hidden_dim=self.args['lstm_hidden_dim']
 
-        # 1. Projection des features d'entrée (17D → embed_dim)
+        # 1. Projection des features d'entrée (1D → embed_dim)
         self.embedding = nn.Linear(input_dim, embed_dim)
         self.ReLU = nn.ReLU()
 
@@ -33,9 +89,9 @@ class nnet(nn.Module):
         self.mu_head = nn.Linear(lstm_hidden_dim, 1)
         self.log_sigma_head = nn.Linear(lstm_hidden_dim, 1)
 
-    def forward(self, features, sample=True):
+    def forward(self, features, sample=True, exp=0):
         """
-        :param features: tensor [N, 17]  (N = nombre de coupes candidates)
+        :param features: tensor [N, 2]  (N = nombre de coupes candidates)
         :param sample: bool, si True on échantillonne un ratio k, sinon on renvoie µ
         :return: k ∈ [0,1], µ ∈ ℝ, σ ∈ ℝ⁺
         """

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # side quests : 
     parser.add_argument('inputs_type', type=str, help="inputs_type for NN") # one of ["only_scores", "only_features", "scores_and_features"]
     parser.add_argument('parallel', type=str, help="parallel")
-    parser.add_argument('sol_path', type=str, help="Path to the solution file")
+    #parser.add_argument('sol_path', type=str, help="Path to the solution file")
     args = parser.parse_args()
 
     # python main.py "gisp" "RL" "0" "only_scores" "parallel" None None
@@ -41,7 +41,7 @@ if __name__ == "__main__":
         num_cuts_per_round_by_default = "5"
     seed = args.seed  # Random seed
     inputs_type = args.inputs_type
-    sol_path = args.sol_path  # Path to the solution file
+    sol_path = "None" #args.sol_path  # Path to the solution file
 
     # Tournament parameters
     fitness_size = 5  # Number of individuals in the fitness tournament
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     load_checkpoint = False  # Whether to load a checkpoint for first RL training
     best_model_score = None
     loop = 1
-    extend_training_instances = True
+    extend_training_instances = False
     if num_cuts_per_round == "RL":
         RL = True
         loop = 1
@@ -82,18 +82,18 @@ if __name__ == "__main__":
     
     n_test_instances = len(fichiers)
     GP_function_test = ""
-    """#################### TO SET THE FUNCTION TEST ####################
+    #################### TO SET THE FUNCTION TEST ####################
     # --> NO GP run
     if problem == "gisp":
         GP_function_test = "add(getCutLPSolCutoffDistance, getCutViolation)"
     elif problem == "wpsm":
         GP_function_test = "mul(getCutViolation, protectedDiv(10000000, getNumIntCols))"
     elif problem == "fcmcnf":
-        GP_function_test = "add(getEfficacy, mul(getEfficacy, mul(sub(getNVars, getCutLPSolCutoffDistance), mul(sub(getNVars, getCutLPSolCutoffDistance), getEfficacy))))"
-    #################### TO SET THE FUNCTION TEST ####################"""
+        GP_function_test = "mul(protectedDiv(getNVars, getNNonz), add(getEfficacy, getCutLPSolCutoffDistance))"
+    #################### TO SET THE FUNCTION TEST ####################
     
 
-    """########### SMALL PARAM FOR TESTING ###########
+    ########### SMALL PARAM FOR TESTING ###########
     #n_test_instances
     initial_pop=1
     nb_of_gen=0
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     loop=1
     parallel = False
     #n_test_instances = 2
-    ############ SMALL PARAM FOR TESTING ###########"""
+    ############ SMALL PARAM FOR TESTING ###########
 
     """simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
     if not os.path.exists(simulation_folder):
