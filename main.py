@@ -93,7 +93,7 @@ if __name__ == "__main__":
     #################### TO SET THE FUNCTION TEST ####################
     
 
-    ########### SMALL PARAM FOR TESTING ###########
+    """########### SMALL PARAM FOR TESTING ###########
     #n_test_instances
     initial_pop=1
     nb_of_gen=0
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     loop=1
     parallel = False
     #n_test_instances = 2
-    ############ SMALL PARAM FOR TESTING ###########
+    ############ SMALL PARAM FOR TESTING ###########"""
 
     """simulation_folder = os.path.join(conf.ROOT_DIR, "simulation_folder", "pb__" + problem + "__numcut__" + num_cuts_per_round + "__seed__" + seed)
     if not os.path.exists(simulation_folder):
