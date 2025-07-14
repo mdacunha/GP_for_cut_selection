@@ -124,7 +124,7 @@ class nnet0(nn.Module):
         self.args = args
 
         if self.args["inputs_type"] == "only_scores":
-            input_dim = 2
+            input_dim = 1
         elif self.args["inputs_type"] == "only_features":
             input_dim = 17
         elif self.args["inputs_type"] == "scores_and_features":
