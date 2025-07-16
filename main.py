@@ -72,7 +72,10 @@ if __name__ == "__main__":
     load_checkpoint = False  # Whether to load a checkpoint for first RL training
     best_model_score = None
     loop = 1
-    extend_training_instances = False
+    extend_training_instances = True
+    parallel_filtering = False
+    if args.parallel=="parallel_filtering":
+        parallel_filtering = True    
     if num_cuts_per_round == "RL":
         RL = True
         loop = 1
@@ -136,12 +139,22 @@ if __name__ == "__main__":
                                                         "seed__" + seed)
             else:
                 higher_simulation_folder = os.path.join(conf.ROOT_DIR, 
-                                                        "simulation_folder", 
+                                                        "simulation_folder_test2", 
                                                         "pb__" + problem,
                                                         "numcut__" + num_cuts_per_round, 
                                                         "not_parallel",
                                                         "mode__" + inputs_type, 
+                                                        "exp__" + args.exp,
                                                         "seed__" + seed)
+                if parallel_filtering:
+                    higher_simulation_folder = os.path.join(conf.ROOT_DIR, 
+                                                          "simulation_folder_test_bis2", 
+                                                          "pb__" + problem,
+                                                          "numcut__" + num_cuts_per_round, 
+                                                          "not_parallel",
+                                                          "mode__" + inputs_type, 
+                                                          "exp__" + args.exp,
+                                                          "seed__" + seed)
             if not os.path.exists(higher_simulation_folder):
                 os.makedirs(higher_simulation_folder)
             simulation_folder = os.path.join(higher_simulation_folder, "loop__" + str(i))
@@ -192,7 +205,8 @@ if __name__ == "__main__":
                 inputs_type=inputs_type,
                 higher_simulation_folder=higher_simulation_folder,
                 heuristic=heuristic,
-                exp=args.exp
+                exp=args.exp,
+                parallel_filtering=parallel_filtering
             )
 
             # Evaluate the convergence of GP across generations
@@ -221,7 +235,8 @@ if __name__ == "__main__":
                                                 sol_path=sol_path,
                                                 parallel=parallel,
                                                 best_score=best_model_score,
-                                                exp=args.exp
+                                                exp=args.exp,
+                                                parallel_filtering=parallel_filtering
                                                 )
             best_model_score = nnetwrapper.learn()
 
@@ -248,7 +263,7 @@ if __name__ == "__main__":
                         fixedcutsel=GNN_comparison, GNN_transformed=transformed, node_lim=node_lim, 
                         sol_path=sol_path, do_gnn=False, build_set_of_instances=False,saving_folder=simulation_folder,
                         num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type, heuristic=heuristic, 
-                        get_scores=get_scores, exp=args.exp)
+                        get_scores=get_scores, exp=args.exp, parallel_filtering=parallel_filtering)
 
     # Gather information from JSON files for the specified problems and partitions
     dic_info = gather_info_from_json_files(problems=[problem], partitions=[testing_folder], saving_folder=simulation_folder)

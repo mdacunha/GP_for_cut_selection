@@ -20,7 +20,8 @@ from RL.neural_network import nnet0, nnet1, nnet2
 def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS", parameter_settings=False,
                           time_limit=0, fixedcutsel=False, node_lim=-1, sol_path=None, is_Test=False, final_test=False,
                           test=False, num_cuts_per_round=10, RL=False, higher_simulation_folder="", 
-                          nnet=None, inputs_type="", heuristic=False, get_scores=False, exp=0):
+                          nnet=None, inputs_type="", heuristic=False, get_scores=False, exp=0, 
+                          parallel_filtering=False):
     new_args = args
     if RL and nnet==None: # for the GP learning step starting at loop=2
         new_args.update({
@@ -28,11 +29,11 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             })
         exp = int(exp)
         if exp==0:
-            nnet = nnet0(new_args)
+            nnet = nnet0(new_args, parallel_filtering)
         elif exp==1:
-            nnet = nnet1(new_args)
+            nnet = nnet1(new_args, parallel_filtering)
         elif exp==2:
-            nnet = nnet2(new_args)
+            nnet = nnet2(new_args, parallel_filtering)
         filepath = os.path.join(higher_simulation_folder, "weights" + ".pth.tar")
         if not os.path.exists(filepath):
             raise ("No model in path {}".format(filepath))
@@ -78,7 +79,8 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
             #cut_selector = CustomCutSelector(comp_policy=cut_comp)
             cut_selector = CustomCutSelector(comp_policy=cut_comp, num_cuts_per_round=num_cuts_per_round, test=test, RL=RL, 
                                              nnet=nnet, inputs_type=inputs_type, is_Test=is_Test, final_test=final_test,
-                                             get_scores=get_scores, heuristic=heuristic, args=new_args, exp=exp)
+                                             get_scores=get_scores, heuristic=heuristic, args=new_args, exp=exp, 
+                                             parallel_filtering=parallel_filtering)
             model.includeCutsel(cut_selector, "", "", 536870911)
             
 
@@ -139,7 +141,8 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                      inputs_type="",
                                                      higher_simulation_folder="",
                                                      heuristic=False,
-                                                     exp=0):  
+                                                     exp=0,
+                                                     parallel_filtering=False):  
     sol_times = []
     nnodes = []
     nb_done = 0
@@ -157,7 +160,7 @@ def perform_SCIP_instances_using_a_tuned_comp_policy(instances_folder="", cut_co
                                                                    num_cuts_per_round=num_cuts_per_round, RL=RL,
                                                                    inputs_type=inputs_type,
                                                                    higher_simulation_folder=higher_simulation_folder,
-                                                                   heuristic=heuristic, exp=exp)
+                                                                   heuristic=heuristic, exp=exp, parallel_filtering=parallel_filtering)
                 sol_times.append(time_or_gap)
                 nnodes.append(visited_nodes)
                 nb_done += 1

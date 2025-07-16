@@ -31,7 +31,7 @@ def evaluate(scoring_function, params):
          str(params["node_lim"]), params["sol_path"], str(int(params["transformed"])), 
          str(int(params["test"])), str(params["num_cuts_per_round"]), str(int(params["RL"])),
          params["inputs_type"], params["higher_simulation_folder"], str(int(params["heuristic"])), 
-         str(params["exp"])],
+         str(params["exp"]), str(int(params["parallel_filtering"]))],
         capture_output=True, text=True)
     mean_solving_time_or_gap = result.stdout.strip()
 
@@ -54,7 +54,7 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
             training_folder="Train", fitness_size=5, parsimony_size=1.2, time_limit=0, nb_of_instances=0, 
             fixedcutsel=False, semantic_algo=False, node_lim=-1, sol_path=None, transformed=False, test=False,
             num_cuts_per_round=10, parallel=False, RL=False, inputs_type="", higher_simulation_folder="",
-            heuristic=False, exp=0):
+            heuristic=False, exp=0, parallel_filtering=False):
     
     if seed is None:
         seed = math.floor(random.random() * 10000)
@@ -122,7 +122,8 @@ def main_GP(problem="gisp", initial_pop=50, mate=0.9, mutate=0.1,
         "inputs_type": inputs_type,
         "heuristic": heuristic,
         "higher_simulation_folder": higher_simulation_folder,
-        "exp": exp
+        "exp": exp,
+        "parallel_filtering": parallel_filtering
     }
 
     evaluate_with_params = partial(evaluate, params=params)

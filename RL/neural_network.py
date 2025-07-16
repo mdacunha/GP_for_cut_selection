@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 
 class nnet2(nn.Module):
-    def __init__(self, args, outputs=100):
+    def __init__(self, args, parallel_filtering=False, outputs=100):
         super(nnet2, self).__init__()
 
         self.args = args
@@ -18,8 +18,11 @@ class nnet2(nn.Module):
             input_dim = 17
         elif self.args["inputs_type"] == "scores_and_features":
             input_dim = 18
+
+        if parallel_filtering: 
+            input_dim+=1
             
-        lstm_hidden_dim=self.args['lstm_hidden_dim']
+        lstm_hidden_dim = self.args['lstm_hidden_dim']
 
         self.ReLU = nn.ReLU()
 
@@ -29,9 +32,8 @@ class nnet2(nn.Module):
     def forward(self, x):
         """
         x: (B, L, 2)
-        lengths: (B,)
         """
-        L, _ = x.shape
+        x = x.unsqueeze(0)
         #assert L <= self.k_max, f"Input length {L} exceeds k_max {self.k_max}"
         
         _, (h_n, _) = self.lstm(x)
@@ -60,11 +62,10 @@ class nnet2(nn.Module):
                 return k
             
 class nnet1(nn.Module):
-    def __init__(self, args, k_max=800):
+    def __init__(self, args, parallel_filtering=False, outputs=100):
         super(nnet1, self).__init__()
 
         self.args = args
-        self.k_max = k_max
 
         if self.args["inputs_type"] == "only_scores":
             input_dim = 1
@@ -72,28 +73,43 @@ class nnet1(nn.Module):
             input_dim = 17
         elif self.args["inputs_type"] == "scores_and_features":
             input_dim = 18
-            
-        lstm_hidden_dim=self.args['lstm_hidden_dim']
 
-        self.ReLU = nn.ReLU()
+        if parallel_filtering: 
+            input_dim+=1
+            
+        lstm_hidden_dim= self.args['lstm_hidden_dim']
+        mlp1_dim = self.args['mlp1_dim']
+        mlp2_dim = self.args['mlp2_dim']
+
+        self.dropout = nn.Dropout(self.args['dropout'])
+        self.ln = nn.LayerNorm(lstm_hidden_dim)
 
         self.lstm = nn.LSTM(input_dim, lstm_hidden_dim, batch_first=True)
-        self.fc = nn.Linear(lstm_hidden_dim, k_max)
+        self.fc = torch.nn.Sequential(
+            nn.Linear(lstm_hidden_dim, mlp1_dim),
+            nn.ReLU(),
+            self.dropout,
+            nn.Linear(mlp1_dim, mlp2_dim),
+            nn.ReLU(),
+            self.dropout,
+            nn.Linear(mlp2_dim, outputs)
+        )
+
+        self.attention = Attention(lstm_hidden_dim)
+        
 
     def forward(self, x):
         """
-        x: (B, L, 2)
-        lengths: (B,)
-        """
-        L, _ = x.shape
-        assert L <= self.k_max, f"Input length {L} exceeds k_max {self.k_max}"
-        
-        _, (h_n, _) = self.lstm(x)
-        h_final = h_n[-1]
-        logits = self.fc(h_final)
+        x: (L, 2)
+        """        
+        x = x.unsqueeze(0)
+        lstm_out, _ = self.lstm(x)
+        #h_final = h_n[-1]
+        out = self.ln(lstm_out)
+        context, attn_weights = self.attention(out)
+        x = self.dropout(context)
+        logits = self.fc(x)
 
-        mask = torch.arange(self.k_max, device=x.device) < L
-        logits[~mask] = -1e10  # force probs to ~0
 
         # Crée la distribution catégorielle directement sur les logits
         dist = Categorical(logits=logits)
@@ -118,7 +134,7 @@ class nnet1(nn.Module):
                 return k
 
 class nnet0(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, parallel_filtering=False):
         super(nnet0, self).__init__()
 
         self.args = args
@@ -130,6 +146,9 @@ class nnet0(nn.Module):
         elif self.args["inputs_type"] == "scores_and_features":
             input_dim = 18
             
+        if parallel_filtering: 
+            input_dim+=1
+
         embed_dim=self.args['embed_dim']
         lstm_hidden_dim=self.args['lstm_hidden_dim']
 
@@ -144,7 +163,7 @@ class nnet0(nn.Module):
         self.mu_head = nn.Linear(lstm_hidden_dim, 1)
         self.log_sigma_head = nn.Linear(lstm_hidden_dim, 1)
 
-    def forward(self, features, sample=True, exp=0):
+    def forward(self, features, sample=True):
         """
         :param features: tensor [N, 2]  (N = nombre de coupes candidates)
         :param sample: bool, si True on échantillonne un ratio k, sinon on renvoie µ
@@ -154,9 +173,9 @@ class nnet0(nn.Module):
 
         # Étape 1 : Embed les vecteurs 17D → d
         assert not torch.isnan(features).any(), "features contains NaN"
-        x = self.embedding(features) # [N, embed_dim]
+        #x = self.embedding(features) # [N, embed_dim]
         assert not torch.isnan(x).any(), "embedding output contains NaN" 
-        x = self.ReLU(x)
+        #x = self.ReLU(x)
         x = x.unsqueeze(0)  # [1, N, embed_dim] → batch_size=1 pour LSTM
 
         # Étape 2 : Encodeur LSTM → dernier état caché
@@ -202,3 +221,20 @@ class nnet0(nn.Module):
                     k = self.forward(features, sample=False)  # k ∈ [0, 1]
                 k = k.cpu().numpy()[0]
                 return k
+            
+class Attention(nn.Module):
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.attn = nn.Linear(hidden_size, 1)
+
+    def forward(self, lstm_outputs):  # (batch, seq_len, hidden_size)
+        # Score pour chaque timestep
+        attn_scores = self.attn(lstm_outputs).squeeze(-1)  # (batch, seq_len)
+
+        # Normalisation softmax
+        attn_weights = torch.softmax(attn_scores, dim=1)  # (batch, seq_len)
+
+        # Calcul du contexte (pondération des outputs par attention)
+        context = torch.sum(lstm_outputs * attn_weights.unsqueeze(-1), dim=1)  # (batch, hidden_size)
+
+        return context, attn_weights  # On peut retourner les poids pour visualisation

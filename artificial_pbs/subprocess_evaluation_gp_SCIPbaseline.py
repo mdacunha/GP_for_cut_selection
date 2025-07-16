@@ -21,7 +21,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
                                      parameter_settings=False, time_limit=0, 
                                      fixedcutsel=False, node_lim=-1, sol_path=None, func_name=None,
                                      instances=[], num_cuts_per_round=10, RL=False, inputs_type="",
-                                     heuristic=False, get_scores=False, exp=0):
+                                     heuristic=False, get_scores=False, exp=0, parallel_filtering=False):
     
     if function == "best_estimate_BFS":
         comp_policy = "estimate"
@@ -57,11 +57,11 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
         checkpoint = torch.load(filepath, map_location=map_location, weights_only=True)
         exp = int(exp)
         if exp==0:
-            nn = nnet0(args)
+            nn = nnet0(args, parallel_filtering)
         elif exp==1:
-            nn = nnet1(args)
+            nn = nnet1(args, parallel_filtering)
         elif exp==2:
-            nn = nnet2(args)
+            nn = nnet2(args, parallel_filtering)
         nn.load_state_dict(checkpoint['state_dict'])
     else:
         nn = None
@@ -79,7 +79,7 @@ def evaluate_a_function_and_store_it(problem, function, performance_folder, savi
                                                    fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
                                                    is_Test=True, final_test=True, num_cuts_per_round=num_cuts_per_round, 
                                                    RL=RL, nnet=nn, inputs_type=inputs_type, heuristic=heuristic, 
-                                                   get_scores=get_scores, exp=exp)
+                                                   get_scores=get_scores, exp=exp, parallel_filtering=parallel_filtering)
 
             perfs[instance[:len(instance) - 3]] = [nb_nodes, time]
 
@@ -109,7 +109,8 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="trai
                                                    node_lim=-1, sol_path=None, instances=[], 
                                                    saving_folder="simulation_outcomes",
                                                    num_cuts_per_round=10, RL=False, inputs_type="",
-                                                   heuristic=False, get_scores=False, exp=0):
+                                                   heuristic=False, get_scores=False, exp=0,
+                                                   parallel_filtering=False):
     if GNN_transformed:
         folder = f"GNN_method/TransformedInstances/{testing_folder}"
     else:
@@ -119,10 +120,11 @@ def evaluate_the_GP_heuristics_and_SCIP_functions(problem, training_folder="trai
             evaluate_a_function_and_store_it(problem, GP_dics[key], folder, saving_folder, training_folder, testing_folder,
                                              higher_simulation_folder=higher_simulation_folder,
                                              parameter_settings=parameter_settings, time_limit=time_limit, 
-                                                   fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
-                                                   func_name="GP_parsimony_parameter_"+str(key), instances=instances,
-                                                   num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type,
-                                                   heuristic=heuristic, get_scores=get_scores, exp=exp)
+                                            fixedcutsel=fixedcutsel, node_lim=node_lim, sol_path=sol_path, 
+                                            func_name="GP_parsimony_parameter_"+str(key), instances=instances,
+                                            num_cuts_per_round=num_cuts_per_round, RL=RL, inputs_type=inputs_type,
+                                            heuristic=heuristic, get_scores=get_scores, exp=exp, 
+                                            parallel_filtering=parallel_filtering)
 
 
     functions = ["SCIP"]#"best_estimate_BFS","best_estimate_DFS","best_LB_BFS"]
@@ -152,6 +154,7 @@ if __name__ == "__main__":
     parser.add_argument('heuristic', type=int, help='heuristic')
     parser.add_argument('get_scores', type=int, help='get_scores')
     parser.add_argument('exp', type=int, help='exp')
+    parser.add_argument('parallel_filtering', type=int, help='parallel_filtering')
     args = parser.parse_args()
     problem = args.problem
     training_folder=args.training_folder
@@ -161,6 +164,7 @@ if __name__ == "__main__":
     GNN_transformed = bool(args.GNN_transformed)
     RL = bool(args.RL)
     heuristic = bool(args.heuristic)
+    parallel_filtering = bool(args.parallel_filtering)
 
     gp_func_dic = ast.literal_eval(args.json_gp_func_dic)
     instance = args.instance
@@ -172,5 +176,6 @@ if __name__ == "__main__":
                                                   GNN_transformed=GNN_transformed, node_lim=args.node_lim, 
                                                   sol_path=args.sol_path, instances=[instance], saving_folder=args.saving_folder, 
                                                   num_cuts_per_round=args.num_cuts_per_round, RL=RL, inputs_type=args.inputs_type,
-                                                  heuristic=heuristic, get_scores=args.get_scores, exp=args.exp)
+                                                  heuristic=heuristic, get_scores=args.get_scores, exp=args.exp, 
+                                                  parallel_filtering=parallel_filtering)
     print("It is ok for GP_function and the SCIP baseline")

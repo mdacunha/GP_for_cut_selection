@@ -17,9 +17,10 @@ from RL.neural_network import nnet0, nnet1, nnet2
 class NeuralNetworkWrapper():
     def __init__(self, training_path="", testing_path="", higher_simulation_folder="", problem="gisp", cut_comp="", 
                  parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None, 
-                 parallel=False, glob_model=None, best_score=None, exp=0):
+                 parallel=False, glob_model=None, best_score=None, exp=0, parallel_filtering=False):
         
         self.exp = int(exp)
+        self.parallel_filtering = parallel_filtering
         self.set_nnet(args, inputs_type, glob_model)
         self.training_path = training_path
         self.testing_path = testing_path
@@ -48,11 +49,11 @@ class NeuralNetworkWrapper():
                     'inputs_type': self.inputs_type
                 })
             if self.exp==0:
-                self.nnet = nnet0(self.new_args)
+                self.nnet = nnet0(self.new_args, self.parallel_filtering)
             elif self.exp==1:
-                self.nnet = nnet1(self.new_args)
+                self.nnet = nnet1(self.new_args, self.parallel_filtering)
             elif self.exp==2:
-                self.nnet = nnet2(self.new_args)
+                self.nnet = nnet2(self.new_args, self.parallel_filtering)
 
     def learn(self):
         #mp.set_start_method('spawn', force=True)
@@ -132,7 +133,7 @@ class NeuralNetworkWrapper():
 
     def train(self, instances, n):
 
-        optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'])
+        optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'], weight_decay=args['weight_decay'])
 
         instances = instances[:int(0.8 * n)]  # Utiliser 80% des instances pour l'entraînement
 
@@ -157,7 +158,10 @@ class NeuralNetworkWrapper():
                 new_b = (1 - args['alpha']) * b + args['alpha'] * r
                 self.baselines[j+1] = new_b"""
 
-            losses = [-reward * torch.stack(log_sample_list).sum() for (reward, log_sample_list) in results]
+            if self.exp==0:
+                losses = [a * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (a, k_list) in results]
+            else:
+                losses = [-reward * torch.stack(log_sample_list).sum() for (reward, log_sample_list) in results]
             
             loss = torch.stack(losses).mean()
 
@@ -169,6 +173,7 @@ class NeuralNetworkWrapper():
             # compute gradient and do SGD step
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.nnet.parameters(), max_norm=5.0)
             optimizer.step()
         
         """result = [k.item() for k in results[0][1]]
@@ -226,7 +231,8 @@ class NeuralNetworkWrapper():
                     RL=True,
                     inputs_type=inputs_type,
                     nnet=nnet,
-                    exp=self.exp
+                    exp=self.exp,
+                    parallel_filtering=self.parallel_filtering
                 )
             elif mode=="test":
                 _, time_or_gap, k_list, t = perform_SCIP_instance(
@@ -238,7 +244,8 @@ class NeuralNetworkWrapper():
                 RL=True,
                 inputs_type=inputs_type,
                 nnet=nnet,
-                exp=self.exp
+                exp=self.exp,
+                parallel_filtering=self.parallel_filtering
             )
             return time_or_gap, k_list
         else:

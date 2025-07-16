@@ -25,12 +25,14 @@ if __name__ == "__main__":
     parser.add_argument('higher_simulation_folder', type=str, help='higher_simulation_folder')
     parser.add_argument('heuristic', type=int, help='0 ou 1, heuristic mode')
     parser.add_argument('exp', type=int, help='experiment number for heuristic mode')
+    parser.add_argument('parallel_filtering', type=int, help='parallel_filtering')
     args = parser.parse_args()
     fixedcutsel = bool(args.fixedcutsel)
     transformed = bool(args.transformed)
     test = bool(args.test)
     RL = bool(args.RL)
     heuristic = bool(args.heuristic)
+    parallel_filtering = bool(args.parallel_filtering)
     if args.problem in ["gisp", "wpsm", "fcmcnf"]:
         if transformed:
             lp_dir = os.path.join(os.path.dirname(__file__), f"GNN_method/TransformedInstances/{args.training_folder}/")
@@ -40,7 +42,8 @@ if __name__ == "__main__":
             cut_comp=args.comp_policy, node_select=args.node_select, parameter_settings=True, fixedcutsel=fixedcutsel, 
             node_lim=args.node_lim, time_limit=args.time_limit, sol_path=args.sol_path, test=test, 
             num_cuts_per_round=args.num_cuts_per_round, RL=RL, inputs_type=args.inputs_type, 
-            higher_simulation_folder=args.higher_simulation_folder, heuristic=heuristic, exp=args.exp)
+            higher_simulation_folder=args.higher_simulation_folder, heuristic=heuristic, exp=args.exp, 
+            parallel_filtering=parallel_filtering)
         print(mean_val)
     else:
         random.seed(args.seed)

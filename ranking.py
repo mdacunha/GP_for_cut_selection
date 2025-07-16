@@ -13,7 +13,7 @@ def extract_values_from_file(filepath):
 
     gp_time = None
     scip_time = None
-
+    
     for line in lines:
         if 'geometric mean solving time for set test for method GP_parsimony_parameter_1.2' in line:
             match = re.search(r'is \$([\d.]+)', line)
@@ -27,17 +27,21 @@ def extract_values_from_file(filepath):
     if gp_time is not None and scip_time is not None:
         return (scip_time - gp_time) / scip_time
     else:
+        for line in lines:
+            if 'Fin du job' in line:
+                return -1
         return None
 
 def parse_filename(filename):
-    match = re.match(r'job_([^_]+)_([^_]+)_([0-9]+)(?:_(.+))?\.out', filename)
+    match = re.match(r'job_([^_]+)_([^_]+)_([0-9]+)_([0-9]+)(?:_(.+))?\.out', filename)
     if match:
         problem = match.group(1)
         nb_cuts = match.group(2)
         seed = int(match.group(3))
-        inputs = match.group(4)  # None si non présent
+        exp = int(match.group(4))
+        inputs = match.group(5)  # None si non présent
 
-        try:
+        """try:
             nb_cuts_int = int(nb_cuts)
         except ValueError:
             if nb_cuts == "heuristic":
@@ -52,7 +56,12 @@ def parse_filename(filename):
                 else:
                     nb_cuts_int = 100  # Valeur par défaut pour RL si inputs est inconnu
 
-        return problem, nb_cuts_int, seed, inputs
+        return problem, nb_cuts_int, seed, inputs"""
+
+        if nb_cuts == "RL":
+            nb_cuts_int = int(exp)
+
+        return problem, nb_cuts_int, seed, exp
     else:
         return None, None, None
 
@@ -61,7 +70,7 @@ def main(directory):
     full=True
     failed_pb = []
 
-    for filename in os.listdir(directory):
+    """for filename in os.listdir(directory):
         if filename.endswith('.out'):
             problem, nb_cuts, seed, inputs = parse_filename(filename)
             if problem is not None:
@@ -81,6 +90,28 @@ def main(directory):
                     elif nb_cuts == 100 or nb_cuts == 110 or nb_cuts == 120 or nb_cuts == 130:
                         nb_cuts = "RL"
                     failed_pb.append(f'sbatch runGP.sh "{problem}" "{nb_cuts}" "{seed}" "{inputs}"')
+
+    df = pd.DataFrame(data)
+    df_sorted = df.sort_values(by=["score"], ascending=False).reset_index(drop=True)
+    return df_sorted, full, failed_pb"""
+
+    for filename in os.listdir(directory):
+        if filename.endswith('.out'):
+            problem, nb_cuts, seed, exp = parse_filename(filename)
+            if problem is not None:
+                filepath = os.path.join(directory, filename)
+                score = extract_values_from_file(filepath)
+                if score is not None and score!=-1:
+                    data.append({
+                        "problem": problem,
+                        "nb_cuts": nb_cuts,
+                        "seed": seed,
+                        "score": score
+                    })
+                elif score==-1 or score==None:#None:
+                    full=False
+                    nb_cuts = "RL"
+                    failed_pb.append(f'sbatch runGP.sh "{problem}" "{nb_cuts}" "{seed}" "only_scores" "not_parallel" "{exp}"')
 
     df = pd.DataFrame(data)
     df_sorted = df.sort_values(by=["score"], ascending=False).reset_index(drop=True)
@@ -106,7 +137,7 @@ def plot_evolution_with_point(dfs, folder, lowbound=-np.inf, mean=True, median=F
         all_cut_values.update(cut_values)
         
         # Définir un petit offset horizontal pour chaque problème
-        offsets = np.linspace(-0.8, 0.8, len(problems))
+        offsets = np.linspace(-0.05, 0.05, len(problems))
 
         # Courbes moyennes
         for problem in problems:
@@ -219,8 +250,8 @@ if __name__ == "__main__":
 
     #print(find(df_result, 'gisp', 5, 0))
 
-    """for item in failed_pb:
-        print(item)"""
+    for item in failed_pb:
+        print(item)
     
 
 

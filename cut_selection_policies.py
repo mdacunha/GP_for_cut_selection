@@ -27,7 +27,8 @@ operations = {
 class CustomCutSelector(Cutsel):
 
     def __init__(self, comp_policy, num_cuts_per_round=10, test=False, RL=False, nnet=None, inputs_type="",is_Test=False,
-                 final_test=False, get_scores=False, heuristic=False, args={}, exp=0, min_orthogonality_root=0.9, min_orthogonality=0.9):
+                 final_test=False, get_scores=False, heuristic=False, args={}, exp=0, parallel_filtering=False, 
+                 min_orthogonality_root=0.9, min_orthogonality=0.9):
         super().__init__()
         self.comp_policy = comp_policy
         self.num_cuts_per_round = num_cuts_per_round
@@ -44,8 +45,10 @@ class CustomCutSelector(Cutsel):
         self.end_time = 0
         self.args=args
         self.exp = exp
+        self.parallel_filtering = parallel_filtering
 
         self.log_sample_list = []
+        
         random.seed(42)
     
     def cutselselect(self, cuts, forcedcuts, root, maxnselectedcuts):
@@ -67,7 +70,7 @@ class CustomCutSelector(Cutsel):
         @return: Dictionary containing the keys 'cuts', 'nselectedcuts', result'. Warning: Cuts can only be reordered!
         @rtype: dict
         """
-        if self.args['cuts_parellism']==0:
+        if not self.parallel_filtering:
             # Initialise number of selected cuts and number of cuts that are still valid candidates
             n_cuts = len(cuts)
             nselectedcuts = 0
@@ -101,7 +104,7 @@ class CustomCutSelector(Cutsel):
                         num_cut = round(n_cuts * self.k)
                     else:
                         self.k = self.nnet.predict(inputs, mode="train")
-                        self.ks.append(self.k)
+                        self.log_sample_list.append(self.k)
                         try:
                             num_cut = int(torch.round(n_cuts * self.k))
                         except:
@@ -119,10 +122,7 @@ class CustomCutSelector(Cutsel):
                         log_sample = self.dist.log_prob(sample)
                         self.log_sample_list.append(log_sample)
                         num_cut = sample.cpu().item() + 1
-                        if self.exp==1:
-                            num_cut = int(num_cut)
-                        elif self.exp==2:
-                            num_cut = int(num_cut/100 * n_cuts)
+                        num_cut = int(num_cut/100 * n_cuts)
                 #self.end_time += time.time() - start_time
             else:
                 num_cut = c * self.num_cuts_per_round
@@ -179,7 +179,7 @@ class CustomCutSelector(Cutsel):
                     nselectedcuts += 1
                     n_cuts -= 1
 
-        elif self.args['cuts_parellism']==1:
+        elif self.parallel_filtering:
             # Initialise number of selected cuts and number of cuts that are still valid candidates
             n_cuts = len(cuts)
             nselectedcuts = 0
@@ -215,10 +215,13 @@ class CustomCutSelector(Cutsel):
                 # scored cuts from those that were previously removed for being too parallel.
                 # Reset the n_cuts counter
                 n_cuts = len(cuts) - nselectedcuts
+                best_cuts_sorted = nselectedcuts
                 for remaining_cut_i in range(nselectedcuts, len(cuts)):
                     cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
                     nselectedcuts += 1
                     n_cuts -= 1
+
+                n_cuts = len(cuts)
 
                 if root:
                     c = 4
@@ -227,30 +230,42 @@ class CustomCutSelector(Cutsel):
 
                 if self.RL:
                     if self.inputs_type == "only_scores":
-                        inputs = [np.array([[score]]) for score in scores]
+                        inputs = [np.array([[score, 1 if i < best_cuts_sorted else 0]]) for i, score in enumerate(scores)]
                     elif self.inputs_type == "only_features":
                         inputs = self.getfeatures(cuts)
                     elif self.inputs_type == "scores_and_features":
-                        inputs = self.get_scores_and_features(cuts, scores)
+                        inputs = self.get_scores_and_features(cuts, scores, nselectedcuts)
                     else:
                         inputs = None
 
                     #start_time = time.time()
-                    if self.is_Test and self.final_test:
-                        num_cut = self.nnet.predict(inputs, mode="final_test")
-                        num_cut = round(n_cuts * num_cut)
-                    elif self.is_Test and not self.final_test:
-                        num_cut = self.nnet.predict(inputs, mode="test")
-                        num_cut = round(n_cuts * num_cut)
+                    if self.exp==0:
+                        if self.is_Test and self.final_test:
+                            self.k = self.nnet.predict(inputs, mode="final_test")
+                            num_cut = round(n_cuts * self.k)
+                        elif self.is_Test and not self.final_test:
+                            self.k = self.nnet.predict(inputs, mode="test")
+                            num_cut = round(n_cuts * self.k)
+                        else:
+                            self.k = self.nnet.predict(inputs, mode="train")
+                            self.log_sample_list.append(self.k)
+                            try:
+                                num_cut = int(torch.round(n_cuts * self.k))
+                            except:
+                                print("n_cuts", n_cuts, "k", self.k, flush=True)
                     else:
-                        self.dist = self.nnet.predict(inputs, mode="train")
-                        sample = self.dist.sample()
-                        log_sample = self.dist.log_prob(sample)
-                        self.log_sample_list.append(log_sample)
-                        num_cut = sample.cpu().item() + 1
-                        if self.exp==1:
+                        if self.is_Test and self.final_test:
+                            num_cut = self.nnet.predict(inputs, mode="final_test")
                             num_cut = int(num_cut)
-                        elif self.exp==2:
+                        elif self.is_Test and not self.final_test:
+                            num_cut = self.nnet.predict(inputs, mode="test")
+                            num_cut = int(num_cut)
+                        else:
+                            self.dist = self.nnet.predict(inputs, mode="train")
+                            sample = self.dist.sample()
+                            log_sample = self.dist.log_prob(sample)
+                            self.log_sample_list.append(log_sample)
+                            num_cut = sample.cpu().item() + 1
                             num_cut = int(num_cut/100 * n_cuts)
                     #self.end_time += time.time() - start_time
                 else:
@@ -361,11 +376,11 @@ class CustomCutSelector(Cutsel):
             features.append(np.array([[context[key] for key in context.keys()]]))
         return features
     
-    def get_scores_and_features(self, cuts, scores):
+    def get_scores_and_features(self, cuts, scores, nselectedcuts):
         features = []
         for i, cut in enumerate(cuts):
             context = self.getcontext(cut, ind=2)
-            features.append(np.array([[scores[i]] + [context[key] for key in context.keys()]]))
+            features.append(np.array([[scores[i]] + [1 if i < nselectedcuts else 0] + [context[key] for key in context.keys()]]))
         return features
 
     def getcontext(self, cut, ind=1):
