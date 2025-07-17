@@ -7,6 +7,7 @@ from conf import *
 import torch
 import torch.optim as optim
 import torch.multiprocessing as mp
+from torch.distributions import Normal
 
 from scip_solver import perform_SCIP_instance
 from RL.arguments import args
@@ -19,6 +20,7 @@ class NeuralNetworkWrapper():
                  parameter_settings=False, saving_folder="", load_checkpoint=False, inputs_type="", sol_path=None, 
                  parallel=False, glob_model=None, best_score=None, exp=0, parallel_filtering=False):
         
+        self.device = torch.device("cuda" if args["cuda"] else "cpu")
         self.exp = int(exp)
         self.parallel_filtering = parallel_filtering
         self.set_nnet(args, inputs_type, glob_model)
@@ -76,9 +78,9 @@ class NeuralNetworkWrapper():
             else:
                 print("Training the neural network...", flush=True)
                 self.train(instances, n)
-                #print("Loss :", train_score, flush=True)
+                #print("Solving time :", train_score, flush=True)
                 test_score = self.test(instances)
-            print("Global Loss for test instances :", test_score, flush=True)
+            print("Global solving time for test instances :", test_score, flush=True)
             if test_score < best_test_score:
                 best_test_score = test_score
                 print("Saving model...", flush=True)
@@ -159,7 +161,12 @@ class NeuralNetworkWrapper():
                 self.baselines[j+1] = new_b"""
 
             if self.exp==0:
-                losses = [a * torch.sum(torch.log(torch.stack([k + 1e-8 for k in k_list]))) for (a, k_list) in results]
+                losses = []
+                for result in results:
+                    reward, outputs = result
+                    reward = torch.tensor(reward, dtype=torch.float32, device=self.device)
+                    single_instance_loss = [-Normal(mu, sigma).log_prob(k_raw) for (k_raw, mu, sigma) in outputs]
+                    losses.append(reward * torch.stack(single_instance_loss).mean())
             else:
                 losses = [-reward * torch.stack(log_sample_list).sum() for (reward, log_sample_list) in results]
             
@@ -173,7 +180,7 @@ class NeuralNetworkWrapper():
             # compute gradient and do SGD step
             optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.nnet.parameters(), max_norm=5.0)
+            #torch.nn.utils.clip_grad_norm_(self.nnet.parameters(), max_norm=5.0)
             optimizer.step()
         
         """result = [k.item() for k in results[0][1]]
@@ -207,8 +214,8 @@ class NeuralNetworkWrapper():
         instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "test") for instance in instances]
         results = []
         for instance_arg in instance_args:
-            r, k_list = self.process_instance(instance_arg)
-            results.append((r, k_list))
+            reward, log_sample_list = self.process_instance(instance_arg)
+            results.append((reward, log_sample_list))
         
         examples = [r for (r, _) in results if r is not None]
         if not examples:

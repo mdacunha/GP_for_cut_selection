@@ -108,7 +108,7 @@ def main(directory):
                         "seed": seed,
                         "score": score
                     })
-                elif score==-1 or score==None:#None:
+                elif score==-1 or score==None:
                     full=False
                     nb_cuts = "RL"
                     failed_pb.append(f'sbatch runGP.sh "{problem}" "{nb_cuts}" "{seed}" "only_scores" "not_parallel" "{exp}"')

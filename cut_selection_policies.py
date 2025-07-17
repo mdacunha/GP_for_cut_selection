@@ -11,6 +11,9 @@ from filelock import FileLock
 from num_cut_heuristic import num_cut_heuristic
 import torch
 
+import warnings
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 def protectedDiv(left, right):
     try:
         return left / right
@@ -97,18 +100,18 @@ class CustomCutSelector(Cutsel):
                 #start_time = time.time()
                 if self.exp==0:
                     if self.is_Test and self.final_test:
-                        self.k = self.nnet.predict(inputs, mode="final_test")
-                        num_cut = round(n_cuts * self.k)
+                        k = self.nnet.predict(inputs, mode="final_test")
+                        num_cut = round(n_cuts * k)
                     elif self.is_Test and not self.final_test:
-                        self.k = self.nnet.predict(inputs, mode="test")
-                        num_cut = round(n_cuts * self.k)
+                        k = self.nnet.predict(inputs, mode="test")
+                        num_cut = round(n_cuts * k)
                     else:
-                        self.k = self.nnet.predict(inputs, mode="train")
-                        self.log_sample_list.append(self.k)
+                        (k, k_raw, mu, sigma) = self.nnet.predict(inputs, mode="train")
+                        self.log_sample_list.append((k_raw, mu, sigma))
                         try:
-                            num_cut = int(torch.round(n_cuts * self.k))
+                            num_cut = int(torch.round(n_cuts * k))
                         except:
-                            print("n_cuts", n_cuts, "k", self.k, flush=True)
+                            print("n_cuts", n_cuts, "k", k, flush=True)
                 else:
                     if self.is_Test and self.final_test:
                         num_cut = self.nnet.predict(inputs, mode="final_test")
@@ -263,18 +266,18 @@ class CustomCutSelector(Cutsel):
                     #start_time = time.time()
                     if self.exp==0:
                         if self.is_Test and self.final_test:
-                            self.k = self.nnet.predict(inputs, mode="final_test")
-                            num_cut = round(n_cuts * self.k)
+                            k = self.nnet.predict(inputs, mode="final_test")
+                            num_cut = round(n_cuts * k)
                         elif self.is_Test and not self.final_test:
-                            self.k = self.nnet.predict(inputs, mode="test")
-                            num_cut = round(n_cuts * self.k)
+                            k = self.nnet.predict(inputs, mode="test")
+                            num_cut = round(n_cuts * k)
                         else:
-                            self.k = self.nnet.predict(inputs, mode="train")
-                            self.log_sample_list.append(self.k)
+                            (k, k_raw, mu, sigma) = self.nnet.predict(inputs, mode="train")
+                            self.log_sample_list.append((k_raw, mu, sigma))
                             try:
-                                num_cut = int(torch.round(n_cuts * self.k))
+                                num_cut = int(torch.round(n_cuts * k))
                             except:
-                                print("n_cuts", n_cuts, "k", self.k, flush=True)
+                                print("n_cuts", n_cuts, "k", k, flush=True)
                     else:
                         if self.is_Test and self.final_test:
                             num_cut = self.nnet.predict(inputs, mode="final_test")

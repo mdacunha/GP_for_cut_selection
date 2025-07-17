@@ -72,7 +72,7 @@ if __name__ == "__main__":
     load_checkpoint = False  # Whether to load a checkpoint for first RL training
     best_model_score = None
     loop = 1
-    extend_training_instances = True
+    extend_training_instances = False
     parallel_filtering = False
     if args.parallel=="parallel_filtering":
         parallel_filtering = True    

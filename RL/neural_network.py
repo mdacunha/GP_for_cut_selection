@@ -60,7 +60,7 @@ class nnet2(nn.Module):
                 self.eval()
                 with torch.no_grad():
                     dist = self.forward(features)  # k ∈ [0, 1]
-                    k = dist.sample().cpu().item() + 1  # échantillonne une action
+                    k = torch.argmax(dist.probs).cpu().item() + 1  # échantillonne une action
                 return k
             
 class nnet1(nn.Module):
@@ -134,8 +134,25 @@ class nnet1(nn.Module):
                 self.eval()
                 with torch.no_grad():
                     dist = self.forward(features)  # k ∈ [0, 1]
-                    k = dist.sample().cpu().item() + 1  # échantillonne une action
+                    k = torch.argmax(dist.probs).cpu().item() + 1  # échantillonne une action
                 return k
+
+class Attention(nn.Module):
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.attn = nn.Linear(hidden_size, 1)
+
+    def forward(self, lstm_outputs):  # (batch, seq_len, hidden_size)
+        # Score pour chaque timestep
+        attn_scores = self.attn(lstm_outputs).squeeze(-1)  # (batch, seq_len)
+
+        # Normalisation softmax
+        attn_weights = torch.softmax(attn_scores, dim=1)  # (batch, seq_len)
+
+        # Calcul du contexte (pondération des outputs par attention)
+        context = torch.sum(lstm_outputs * attn_weights.unsqueeze(-1), dim=1)  # (batch, hidden_size)
+
+        return context, attn_weights  # On peut retourner les poids pour visualisation
 
 class nnet0(nn.Module):
     def __init__(self, args, parallel_filtering=False):
@@ -189,7 +206,7 @@ class nnet0(nn.Module):
         # Étape 3 : MLP pour µ et log(σ)
         mu = self.mu_head(h).squeeze(-1)          # scalaire
         log_sigma = self.log_sigma_head(h).squeeze(-1)  # scalaire
-        sigma = torch.exp(log_sigma)
+        sigma = torch.exp(log_sigma).clamp(min=1e-4, max=1.0)
 
         # Étape 4 : Echantillonnage avec reparametrization trick
         if sample:
@@ -202,7 +219,7 @@ class nnet0(nn.Module):
         k_tanh = torch.tanh(k_raw)
         k = 0.5 * (k_tanh + 1.0)
 
-        return k #, mu, sigma
+        return k, k_raw, mu, sigma
     
     def predict(self, features, mode="train"):
             features = np.stack(features)
@@ -211,28 +228,12 @@ class nnet0(nn.Module):
             if self.args["cuda"]: features = features.contiguous().cuda()
             if mode=="train":
                 self.train()
-                k = self.forward(features, sample=True)  # k ∈ [0, 1]
-                return k
+                k, k_raw, mu, sigma = self.forward(features, sample=True)  # k ∈ [0, 1]
+                return k, k_raw, mu, sigma
             elif mode=="test" or mode=="final_test":
                 self.eval()
                 with torch.no_grad():
-                    k = self.forward(features, sample=False)  # k ∈ [0, 1]
-                k = k.cpu().numpy()[0]
+                    k, _, _, _ = self.forward(features, sample=False)  # k ∈ [0, 1]
+                k = k.cpu().item()
                 return k
             
-class Attention(nn.Module):
-    def __init__(self, hidden_size):
-        super().__init__()
-        self.attn = nn.Linear(hidden_size, 1)
-
-    def forward(self, lstm_outputs):  # (batch, seq_len, hidden_size)
-        # Score pour chaque timestep
-        attn_scores = self.attn(lstm_outputs).squeeze(-1)  # (batch, seq_len)
-
-        # Normalisation softmax
-        attn_weights = torch.softmax(attn_scores, dim=1)  # (batch, seq_len)
-
-        # Calcul du contexte (pondération des outputs par attention)
-        context = torch.sum(lstm_outputs * attn_weights.unsqueeze(-1), dim=1)  # (batch, hidden_size)
-
-        return context, attn_weights  # On peut retourner les poids pour visualisation
