@@ -68,7 +68,7 @@ class NeuralNetworkWrapper():
         n = len(instances)
         self.baselines = {i: 0.0 for i in range(1, n + 1)}
         for epoch in range(args["epochs"]):
-            print('EPOCH ::: ' + str(epoch + 1), flush=True)
+            print('EPOCH ' + str(epoch + 1), flush=True)
             if self.parallel:
                 print("Training the neural network in parallel...", flush=True)
                 self.parallel_train(instances)

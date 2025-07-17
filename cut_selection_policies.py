@@ -86,7 +86,7 @@ class CustomCutSelector(Cutsel):
 
             if self.RL:
                 if self.inputs_type == "only_scores":
-                    inputs = [np.array([[score]]) for score in scores]
+                    inputs = np.array([score for score in scores])
                 elif self.inputs_type == "only_features":
                     inputs = self.getfeatures(cuts)
                 elif self.inputs_type == "scores_and_features":
@@ -112,10 +112,10 @@ class CustomCutSelector(Cutsel):
                 else:
                     if self.is_Test and self.final_test:
                         num_cut = self.nnet.predict(inputs, mode="final_test")
-                        num_cut = int(num_cut)
+                        num_cut = int(num_cut/100 * n_cuts)
                     elif self.is_Test and not self.final_test:
                         num_cut = self.nnet.predict(inputs, mode="test")
-                        num_cut = int(num_cut)
+                        num_cut = int(num_cut/100 * n_cuts)
                     else:
                         self.dist = self.nnet.predict(inputs, mode="train")
                         sample = self.dist.sample()
@@ -178,6 +178,9 @@ class CustomCutSelector(Cutsel):
                     cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
                     nselectedcuts += 1
                     n_cuts -= 1
+            
+            return {'cuts': cuts, 'nselectedcuts': nselectedcuts,
+                'result': SCIP_RESULT.SUCCESS}
 
         elif self.parallel_filtering:
             # Initialise number of selected cuts and number of cuts that are still valid candidates
@@ -190,12 +193,28 @@ class CustomCutSelector(Cutsel):
 
             good_score = max_non_forced_score
 
+            if root:
+                max_parallel = 1 - self.min_orthogonality_root
+                good_max_parallel = max(0.5, max_parallel)
+            else:
+                max_parallel = 1 - self.min_orthogonality
+                good_max_parallel = max(0.5, max_parallel)      
+
+            if self.get_scores:
+                print("scores.json", num_cuts_to_select, scores)
+                self.ajouter_donnee_json("scores.json", num_cuts_to_select, scores)
+
+            if self.heuristic:
+                num = num_cut_heuristic(scores)
+                #num_cuts_to_select = min(num, num_cuts_to_select)
+                num_cuts_to_select = num
+
             # This filters out all cuts in cuts who are parallel to a forcedcut.
             for forced_cut in forcedcuts:
                 n_cuts, cuts, scores = self.filter_with_parallelism(n_cuts, nselectedcuts, forced_cut, cuts,
                                                                     scores, max_parallel, good_max_parallel, good_score)
 
-            if maxnselectedcuts > 0 and num_cuts_to_select > 0:
+            if maxnselectedcuts > 0:
                 while n_cuts > 0:
                     # Break the loop if we have selected the required amount of cuts
                     """if nselectedcuts == num_cuts_to_select:
@@ -215,7 +234,7 @@ class CustomCutSelector(Cutsel):
                 # scored cuts from those that were previously removed for being too parallel.
                 # Reset the n_cuts counter
                 n_cuts = len(cuts) - nselectedcuts
-                best_cuts_sorted = nselectedcuts
+                n_best_cuts_sorted = nselectedcuts
                 for remaining_cut_i in range(nselectedcuts, len(cuts)):
                     cuts, scores = self.select_best_cut(n_cuts, nselectedcuts, cuts, scores)
                     nselectedcuts += 1
@@ -230,9 +249,12 @@ class CustomCutSelector(Cutsel):
 
                 if self.RL:
                     if self.inputs_type == "only_scores":
-                        inputs = [np.array([[score, 1 if i < best_cuts_sorted else 0]]) for i, score in enumerate(scores)]
+                        L=[]
+                        for (i, score) in enumerate(scores):
+                            L.append([score, 1 if i < n_best_cuts_sorted else 0])
+                        inputs = np.array(L)
                     elif self.inputs_type == "only_features":
-                        inputs = self.getfeatures(cuts)
+                        inputs = self.getfeatures(cuts, nselectedcuts)
                     elif self.inputs_type == "scores_and_features":
                         inputs = self.get_scores_and_features(cuts, scores, nselectedcuts)
                     else:
@@ -256,10 +278,10 @@ class CustomCutSelector(Cutsel):
                     else:
                         if self.is_Test and self.final_test:
                             num_cut = self.nnet.predict(inputs, mode="final_test")
-                            num_cut = int(num_cut)
+                            num_cut = int(num_cut/100 * n_cuts)
                         elif self.is_Test and not self.final_test:
                             num_cut = self.nnet.predict(inputs, mode="test")
-                            num_cut = int(num_cut)
+                            num_cut = int(num_cut/100 * n_cuts)
                         else:
                             self.dist = self.nnet.predict(inputs, mode="train")
                             sample = self.dist.sample()
@@ -275,26 +297,8 @@ class CustomCutSelector(Cutsel):
                 num_cuts_to_select = min(maxnselectedcuts, max(num_cut - len(forcedcuts), 0), n_cuts)
                 #print(num_cuts_to_select)
 
-                # Initialises parallel thresholds. Any cut with 'good' score can be at most good_max_parallel to a previous cut,
-                # while normal cuts can be at most max_parallel. (max_parallel >= good_max_parallel)
-                if root:
-                    max_parallel = 1 - self.min_orthogonality_root
-                    good_max_parallel = max(0.5, max_parallel)
-                else:
-                    max_parallel = 1 - self.min_orthogonality
-                    good_max_parallel = max(0.5, max_parallel)      
-
-                if self.get_scores:
-                    print("scores.json", num_cuts_to_select, scores)
-                    self.ajouter_donnee_json("scores.json", num_cuts_to_select, scores)
-
-                if self.heuristic:
-                    num = num_cut_heuristic(scores)
-                    #num_cuts_to_select = min(num, num_cuts_to_select)
-                    num_cuts_to_select = num
-
-        return {'cuts': cuts, 'nselectedcuts': nselectedcuts,
-                'result': SCIP_RESULT.SUCCESS}
+            return {'cuts': cuts, 'nselectedcuts': num_cuts_to_select,
+                    'result': SCIP_RESULT.SUCCESS}
     
     def get_log_sample_list(self):
         return self.log_sample_list
@@ -369,18 +373,28 @@ class CustomCutSelector(Cutsel):
 
         return max_score, scores
     
-    def getfeatures(self, cuts):
+    def getfeatures(self, cuts, nselectedcuts=None):
         features = []
-        for cut in cuts:
-            context = self.getcontext(cut, ind=2)
-            features.append(np.array([[context[key] for key in context.keys()]]))
+        if nselectedcuts is not None:
+            for i, cut in enumerate(cuts):
+                context = self.getcontext(cut, ind=2)
+                features.append(np.array([1 if i < nselectedcuts else 0] + [context[key] for key in context.keys()]))
+        else:
+            for cut in cuts:
+                context = self.getcontext(cut, ind=2)
+                features.append(np.array([context[key] for key in context.keys()]))
         return features
     
-    def get_scores_and_features(self, cuts, scores, nselectedcuts):
+    def get_scores_and_features(self, cuts, scores, nselectedcuts=None):
         features = []
-        for i, cut in enumerate(cuts):
-            context = self.getcontext(cut, ind=2)
-            features.append(np.array([[scores[i]] + [1 if i < nselectedcuts else 0] + [context[key] for key in context.keys()]]))
+        if nselectedcuts is not None:
+            for i, cut in enumerate(cuts):
+                context = self.getcontext(cut, ind=2)
+                features.append(np.array([scores[i]] + [1 if i < nselectedcuts else 0] + [context[key] for key in context.keys()]))
+        else:
+            for i, cut in enumerate(cuts):
+                context = self.getcontext(cut, ind=2)
+                features.append(np.array([scores[i]] + [context[key] for key in context.keys()]))
         return features
 
     def getcontext(self, cut, ind=1):

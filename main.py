@@ -98,7 +98,6 @@ if __name__ == "__main__":
     
 
     """########### SMALL PARAM FOR TESTING ###########
-    #n_test_instances
     initial_pop=1
     nb_of_gen=0
     seed="0"

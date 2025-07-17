@@ -21,6 +21,8 @@ class nnet2(nn.Module):
 
         if parallel_filtering: 
             input_dim+=1
+
+        self.input_dim = input_dim
             
         lstm_hidden_dim = self.args['lstm_hidden_dim']
 
@@ -45,9 +47,9 @@ class nnet2(nn.Module):
         return dist
     
     def predict(self, features, mode="test"):
-            features = np.concatenate(features, axis=0)
-            features = torch.FloatTensor(features.astype(np.float64))
-            #print("features shape", features.shape)
+            features = np.stack(features)
+            features = torch.tensor(features, dtype=torch.float32)
+            features = features.view(-1, self.input_dim)
             if self.args["cuda"]: features = features.contiguous().cuda()
             #features = features.view(features.size(0), self.args["num_inputs"])
             if mode=="train":
@@ -76,6 +78,8 @@ class nnet1(nn.Module):
 
         if parallel_filtering: 
             input_dim+=1
+
+        self.input_dim = input_dim
             
         lstm_hidden_dim= self.args['lstm_hidden_dim']
         mlp1_dim = self.args['mlp1_dim']
@@ -116,9 +120,9 @@ class nnet1(nn.Module):
         return dist
     
     def predict(self, features, mode="test"):
-            features = np.concatenate(features, axis=0)
-            features = torch.FloatTensor(features.astype(np.float64))
-            #print("features shape", features.shape)
+            features = np.stack(features)
+            features = torch.tensor(features, dtype=torch.float32)
+            features = features.view(-1, self.input_dim)
             if self.args["cuda"]: features = features.contiguous().cuda()
             #features = features.view(features.size(0), self.args["num_inputs"])
             self.mode=mode
@@ -148,6 +152,8 @@ class nnet0(nn.Module):
             
         if parallel_filtering: 
             input_dim+=1
+        
+        self.input_dim = input_dim
 
         embed_dim=self.args['embed_dim']
         lstm_hidden_dim=self.args['lstm_hidden_dim']
@@ -157,7 +163,7 @@ class nnet0(nn.Module):
         self.ReLU = nn.ReLU()
 
         # 2. Encodeur séquentiel (LSTM unidirectionnel)
-        self.lstm = nn.LSTM(embed_dim, lstm_hidden_dim, batch_first=True)
+        self.lstm = nn.LSTM(input_dim, lstm_hidden_dim, batch_first=True)
 
         # 3. MLPs pour prédire µ et log(σ)
         self.mu_head = nn.Linear(lstm_hidden_dim, 1)
@@ -172,11 +178,9 @@ class nnet0(nn.Module):
         #N = features.size(0)  # nombre de coupes candidates
 
         # Étape 1 : Embed les vecteurs 17D → d
-        assert not torch.isnan(features).any(), "features contains NaN"
         #x = self.embedding(features) # [N, embed_dim]
-        assert not torch.isnan(x).any(), "embedding output contains NaN" 
         #x = self.ReLU(x)
-        x = x.unsqueeze(0)  # [1, N, embed_dim] → batch_size=1 pour LSTM
+        x = features.unsqueeze(0)  # [1, N, embed_dim] → batch_size=1 pour LSTM
 
         # Étape 2 : Encodeur LSTM → dernier état caché
         _, (h_last, _) = self.lstm(x)  # h_last: [1, hidden_dim]
@@ -197,20 +201,14 @@ class nnet0(nn.Module):
         # Étape 5 : tanh-Gaussian + transformation en [0, 1]
         k_tanh = torch.tanh(k_raw)
         k = 0.5 * (k_tanh + 1.0)
-        
-        if torch.isnan(mu): print("mu is NaN", flush=True)
-        if torch.isnan(log_sigma): print("log_sigma is NaN", flush=True)
-        if torch.isnan(sigma): print("sigma is NaN", flush=True)
-        if torch.isnan(k_raw): print("k_raw is NaN", flush=True)
-
 
         return k #, mu, sigma
     
     def predict(self, features, mode="train"):
-            features = np.concatenate(features, axis=0)
-            features = torch.FloatTensor(features.astype(np.float64))
+            features = np.stack(features)
+            features = torch.tensor(features, dtype=torch.float32)
+            features = features.view(-1, self.input_dim)
             if self.args["cuda"]: features = features.contiguous().cuda()
-            #features = features.view(features.size(0), self.args["num_inputs"])
             if mode=="train":
                 self.train()
                 k = self.forward(features, sample=True)  # k ∈ [0, 1]
