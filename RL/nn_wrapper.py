@@ -6,6 +6,8 @@ from conf import *
 
 import torch
 import torch.optim as optim
+from torch.optim.lr_scheduler import OneCycleLR
+
 import torch.multiprocessing as mp
 from torch.distributions import Normal
 
@@ -32,13 +34,13 @@ class NeuralNetworkWrapper():
         self.parameter_settings = parameter_settings
         self.saving_folder = saving_folder
         self.sol_path = sol_path
-        self.load_checkpoint = load_checkpoint
-        if self.load_checkpoint:
+        self.if_load_checkpoint = load_checkpoint
+        if self.if_load_checkpoint:
             self.load_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
         if args["cuda"]:
             self.nnet.cuda()   
         self.parallel = parallel  
-        #self.best_score = best_score
+        self.best_score = best_score
 
 
     def set_nnet(self, args, inputs_type, model):
@@ -59,7 +61,7 @@ class NeuralNetworkWrapper():
 
     def learn(self):
         #mp.set_start_method('spawn', force=True)
-        if self.load_checkpoint and (self.best_score is not None):
+        if self.if_load_checkpoint and (self.best_score is not None):
             best_test_score = self.best_score
         else:
             best_test_score = np.inf
@@ -68,23 +70,39 @@ class NeuralNetworkWrapper():
             instances += [os.path.join(self.training_path[1], f) for f in os.listdir(self.training_path[1])]
 
         n = len(instances)
-        self.baselines = {i: 0.0 for i in range(1, n + 1)}
+        #self.baselines = {i: 0.0 for i in range(1, n + 1)}
+
+        train_instances = instances[:int(0.8 * n)]  # Utiliser 80% des instances pour l'entraînement
+        test_instances = instances[int(0.8 * len(instances)):]  # Utiliser 20% des instances pour les tests
+        batch_count = int(len(train_instances) / args['batch_size']) + (len(train_instances) % args['batch_size'] != 0)
+
+        optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'], weight_decay=args['weight_decay'])
+
+        scheduler = OneCycleLR(optimizer, 
+                       max_lr=args['lr'],
+                       steps_per_epoch=batch_count, 
+                       epochs=args['epochs'])
+        #L = []
         for epoch in range(args["epochs"]):
             print('EPOCH ' + str(epoch + 1), flush=True)
             if self.parallel:
                 print("Training the neural network in parallel...", flush=True)
-                self.parallel_train(instances)
-                test_score = self.parallel_test(instances)
+                self.parallel_train(train_instances)
+                test_score = self.parallel_test(test_instances)
             else:
                 print("Training the neural network...", flush=True)
-                self.train(instances, n)
-                #print("Solving time :", train_score, flush=True)
-                test_score = self.test(instances)
+                self.train(train_instances, batch_count, optimizer, scheduler)
+                #print("Training solving time :", float(train_score[0]), flush=True)
+                test_score = self.test(test_instances)
+                #L.append([train_score, test_score])
             print("Global solving time for test instances :", test_score, flush=True)
             if test_score < best_test_score:
                 best_test_score = test_score
                 print("Saving model...", flush=True)
                 self.save_checkpoint(folder=self.higher_simulation_folder, filename=self.saving_folder)
+            for param_group in optimizer.param_groups:
+                print(f"LR actuel : {param_group['lr']:.6f}")
+        #plot_evolution(L)
         return best_test_score
     
     def parallel_train(self, instances):
@@ -133,13 +151,8 @@ class NeuralNetworkWrapper():
         shared_model.zero_grad()
 
 
-    def train(self, instances, n):
-
-        optimizer = optim.Adam(self.nnet.parameters(), lr=args['lr'], weight_decay=args['weight_decay'])
-
-        instances = instances[:int(0.8 * n)]  # Utiliser 80% des instances pour l'entraînement
-
-        batch_count = int(len(instances) / args['batch_size']) + (len(instances) % args['batch_size'] != 0)
+    def train(self, instances, batch_count, optimizer, scheduler):
+        
         t = range(batch_count)
         for i in t:
             results = []
@@ -182,6 +195,9 @@ class NeuralNetworkWrapper():
             loss.backward()
             #torch.nn.utils.clip_grad_norm_(self.nnet.parameters(), max_norm=5.0)
             optimizer.step()
+            scheduler.step()
+
+            return np.mean([r for (r, _) in results if r is not None]), 
         
         """result = [k.item() for k in results[0][1]]
         print("k_list :", result)"""
@@ -209,7 +225,6 @@ class NeuralNetworkWrapper():
     def test(self, instances):
 
         examples = []
-        instances = instances[int(0.8 * len(instances)):]  # Utiliser 80% des instances pour l'entraînement
 
         instance_args = [(instance, self.cut_comp, self.parameter_settings, self.sol_path, self.inputs_type, self.nnet, "test") for instance in instances]
         results = []
@@ -275,4 +290,25 @@ class NeuralNetworkWrapper():
         checkpoint = torch.load(filepath, map_location=map_location, weights_only=True)
         self.nnet.load_state_dict(checkpoint['state_dict'])
 
-    
+import matplotlib.pyplot as plt
+
+def plot_evolution(values):
+    """
+    Affiche l'évolution (courbes) des deux séries de valeurs contenues dans `values`.
+    Chaque élément de `values` est une paire (val1, val2).
+    """
+    # Séparer les deux séries
+    list1 = [v[0] for v in values]
+    list2 = [v[1] for v in values]
+
+    # Créer la figure
+    plt.figure(figsize=(10, 5))
+    plt.plot(list1, label='train', color='blue', marker='o')
+    plt.plot(list2, label='test', color='orange', marker='x')
+    plt.title('Évolution des deux séries de valeurs')
+    plt.xlabel('Itération')
+    plt.ylabel('Valeur')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()

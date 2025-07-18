@@ -84,9 +84,9 @@ if __name__ == "__main__":
     contenu = os.listdir(dossier)
     fichiers = [f for f in contenu if os.path.isfile(os.path.join(dossier, f))]
     
-    n_test_instances = 30 #len(fichiers)
+    n_test_instances = len(fichiers)
     GP_function_test = ""
-    #################### TO SET THE FUNCTION TEST ####################
+    """#################### TO SET THE FUNCTION TEST ####################
     # --> NO GP run
     if problem == "gisp":
         GP_function_test = "add(getCutLPSolCutoffDistance, getCutViolation)"
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         GP_function_test = "mul(getCutViolation, protectedDiv(10000000, getNumIntCols))"
     elif problem == "fcmcnf":
         GP_function_test = "mul(protectedDiv(getNVars, getNNonz), add(getEfficacy, getCutLPSolCutoffDistance))"
-    #################### TO SET THE FUNCTION TEST ####################
+    #################### TO SET THE FUNCTION TEST ####################"""
     
 
     """########### SMALL PARAM FOR TESTING ###########

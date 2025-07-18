@@ -51,6 +51,7 @@ class CustomCutSelector(Cutsel):
         self.parallel_filtering = parallel_filtering
 
         self.log_sample_list = []
+        self.num_cut_for_graph = []
         
         random.seed(42)
     
@@ -102,16 +103,16 @@ class CustomCutSelector(Cutsel):
                     if self.is_Test and self.final_test:
                         k = self.nnet.predict(inputs, mode="final_test")
                         num_cut = round(n_cuts * k)
+                        #self.num_cut_for_graph.append([num_cut, k])
                     elif self.is_Test and not self.final_test:
                         k = self.nnet.predict(inputs, mode="test")
                         num_cut = round(n_cuts * k)
+                        #self.num_cut_for_graph.append([num_cut, k])
                     else:
                         (k, k_raw, mu, sigma) = self.nnet.predict(inputs, mode="train")
                         self.log_sample_list.append((k_raw, mu, sigma))
-                        try:
-                            num_cut = int(torch.round(n_cuts * k))
-                        except:
-                            print("n_cuts", n_cuts, "k", k, flush=True)
+                        num_cut = int(torch.round(n_cuts * k))
+                        #print("n_cuts", n_cuts, "k", k, flush=True)
                 else:
                     if self.is_Test and self.final_test:
                         num_cut = self.nnet.predict(inputs, mode="final_test")
@@ -274,10 +275,8 @@ class CustomCutSelector(Cutsel):
                         else:
                             (k, k_raw, mu, sigma) = self.nnet.predict(inputs, mode="train")
                             self.log_sample_list.append((k_raw, mu, sigma))
-                            try:
-                                num_cut = int(torch.round(n_cuts * k))
-                            except:
-                                print("n_cuts", n_cuts, "k", k, flush=True)
+                            num_cut = int(torch.round(n_cuts * k))
+                            #print("n_cuts", n_cuts, "k", k, flush=True)
                     else:
                         if self.is_Test and self.final_test:
                             num_cut = self.nnet.predict(inputs, mode="final_test")
@@ -305,6 +304,8 @@ class CustomCutSelector(Cutsel):
     
     def get_log_sample_list(self):
         return self.log_sample_list
+    def get_list_for_graph(self):
+        return self.num_cut_for_graph
     def time(self):
         return self.end_time
 

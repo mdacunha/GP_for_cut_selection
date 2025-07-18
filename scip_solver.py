@@ -123,6 +123,8 @@ def perform_SCIP_instance(instance_path, cut_comp="estimate", node_select="BFS",
         t = cut_selector.time()/model.getSolvingTime()*100
     except ZeroDivisionError:
         t = 0
+    """if final_test:
+        plot_distribution(cut_selector.get_list_for_graph())"""
     return model.getNNodes(), model.getSolvingTime(), cut_selector.get_log_sample_list(), t
 
 
@@ -302,3 +304,37 @@ def set_scip_separator_params(scip, max_rounds_root=-1, max_rounds=-1, max_cuts_
     scip.setParam("separating/maxcuts", 0)
 
     return scip
+
+import matplotlib.pyplot as plt
+
+import matplotlib.pyplot as plt
+
+def plot_distribution(paired_list, labels=["Composante 1", "Composante 2"], bins=80):
+    """
+    Affiche deux histogrammes dans deux sous-graphes distincts,
+    à partir d'une liste de paires (ou listes à 2 éléments).
+    
+    :param paired_list: liste de tuples ou listes [(a1, b1), (a2, b2), ...]
+    :param labels: étiquettes pour les deux histogrammes
+    :param bins: nombre de bins pour les histogrammes
+    """
+    first_values = [pair[0] for pair in paired_list if pair[0] < bins]
+    second_values = [pair[1] for pair in paired_list]
+
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+
+    axs[0].hist(first_values, bins=bins, color='skyblue', edgecolor='black')
+    axs[0].set_title(f"Distribution de {labels[0]}")
+    axs[0].set_xlabel(labels[0])
+    axs[0].set_ylabel("Fréquence")
+    axs[0].grid(True, linestyle='--', alpha=0.5)
+
+    axs[1].hist(second_values, bins=bins, color='salmon', edgecolor='black')
+    axs[1].set_title(f"Distribution de {labels[1]}")
+    axs[1].set_xlabel(labels[1])
+    axs[1].set_ylabel("Fréquence")
+    axs[1].grid(True, linestyle='--', alpha=0.5)
+
+    plt.tight_layout()
+    plt.show()
+
